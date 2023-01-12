@@ -25,10 +25,10 @@ import (
 	"sync"
 	"time"
 
-	"go.etcd.io/raft/v3/confchange"
-	"go.etcd.io/raft/v3/quorum"
-	pb "go.etcd.io/raft/v3/raftpb"
-	"go.etcd.io/raft/v3/tracker"
+	"github.com/exerosis/raft/confchange"
+	"github.com/exerosis/raft/quorum"
+	pb "github.com/exerosis/raft/raftpb"
+	"github.com/exerosis/raft/tracker"
 )
 
 const (
