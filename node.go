@@ -17,8 +17,10 @@ package raft
 import (
 	"context"
 	"errors"
-
+	"fmt"
+	"github.com/exerosis/raft/rabia"
 	pb "github.com/exerosis/raft/raftpb"
+	"sync/atomic"
 )
 
 type SnapshotStatus int
@@ -243,16 +245,37 @@ func setupNode(c *Config, peers []Peer) *node {
 //
 // Peers must not be zero length; call RestartNode in that case.
 func StartNode(c *Config, peers []Peer) Node {
+	//return StartRaft(c, peers)
+	return StartRabia(c, peers)
+}
+func RestartNode(c *Config) Node {
+	//return RestartRaft(c)
+	return RestartRabia(c)
+}
+
+func StartRaft(c *Config, peers []Peer) Node {
+	fmt.Println("start node")
+	for _, peer := range peers {
+		println("peers: ", peer.ID, " - ", string(peer.Context))
+	}
+
 	n := setupNode(c, peers)
 	go n.run()
 	return n
 }
 
-// RestartNode is similar to StartNode but does not take a list of peers.
-// The current membership of the cluster will be restored from the Storage.
-// If the caller has an existing state machine, pass in the last log index that
-// has been applied to it; otherwise use zero.
-func RestartNode(c *Config) Node {
+func RestartRabia(c *Config) Node {
+	_, config, _ := c.Storage.InitialState()
+	peers, err := config.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	println(string(peers))
+	//parse out peers somehow?
+	return StartRabia(c, []Peer{})
+}
+func RestartRaft(c *Config) Node {
+	fmt.Println("restart node")
 	rn, err := NewRawNode(c)
 	if err != nil {
 		panic(err)
@@ -284,6 +307,7 @@ type node struct {
 }
 
 func newNode(rn *RawNode) node {
+	fmt.Println("new node")
 	return node{
 		propc:      make(chan msgWithResult),
 		recvc:      make(chan pb.Message),
@@ -577,4 +601,122 @@ func (n *node) TransferLeadership(ctx context.Context, lead, transferee uint64) 
 
 func (n *node) ReadIndex(ctx context.Context, rctx []byte) error {
 	return n.step(ctx, pb.Message{Type: pb.MsgReadIndex, Entries: []pb.Entry{{Data: rctx}}})
+}
+
+/*
+
+
+
+
+ */
+
+type Rabia struct {
+	*rabia.RabiaNode
+	channel chan Ready
+	entries []pb.Entry
+}
+
+func StartRabia(config *Config, peers []Peer) *Rabia {
+	var addresses = make([]string, len(peers)+1)
+	for i, peer := range peers {
+		var data = string(peer.Context)
+		addresses[i+1] = data
+	}
+	var node = rabia.MakeRabiaNode(addresses, 3000)
+	var instance = &Rabia{
+		RabiaNode: node,
+		channel:   make(chan Ready),
+		entries:   make([]pb.Entry, len(node.Log.Logs)),
+	}
+	go func() {
+		err := instance.Run("")
+		if err != nil {
+			panic(err)
+		}
+	}()
+	return instance
+}
+
+/*
+This method allows an ETCD node to propose a message it just received from a client.
+*/
+func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
+	var id = uint64(10)
+	delegate.Messages.Store(id, rabia.Message{Data: data, Context: ctx})
+	delegate.Queue.Offer(id)
+	return nil
+}
+
+/*
+This method indicates that ETCD is ready to process another batch of actions.
+Rabia will have been filling the log in the background, so we copy out as many
+entries as we can and send them to ETCD. This will bump forward the committed
+counter which will allow rabia to continue processing if there was no space
+left in the ring buffer.
+*/
+func (delegate *Rabia) Advance() {
+	var entry = 0
+	var highest = atomic.LoadUint64(&delegate.Highest)
+	for i := delegate.Committed; i < highest; i++ {
+		var index = i % uint64(len(delegate.Log.Logs))
+		var proposal = delegate.Log.Logs[index]
+		if proposal != 0 {
+			data, present := delegate.Messages.Load(proposal)
+			if present {
+				delegate.entries[entry] = pb.Entry{
+					Term:  0,
+					Index: i,
+					Data:  data.([]byte),
+				}
+				entry++
+			}
+		}
+	}
+	atomic.StoreUint64(&delegate.Committed, highest)
+	delegate.channel <- Ready{
+		HardState: pb.HardState{
+			Commit: highest,
+		},
+		Entries:          delegate.entries,
+		CommittedEntries: delegate.entries,
+	}
+}
+
+func (delegate *Rabia) Ready() <-chan Ready {
+	return delegate.channel
+}
+func (delegate *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
+	println("Report snapshot called!")
+}
+
+func (delegate *Rabia) Status() Status {
+	println("Someone is checking status.")
+	return Status{}
+}
+func (delegate *Rabia) Tick() {
+}
+func (delegate *Rabia) Stop() {
+	panic("Stop called")
+}
+
+func (delegate *Rabia) ProposeConfChange(ctx context.Context, cc pb.ConfChangeI) error {
+	panic("ProposeConfChange called")
+}
+func (delegate *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
+	panic("ApplyConfChange called")
+}
+func (delegate *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
+	panic("ReadIndex called")
+}
+func (delegate *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
+	panic("TransferLeadership called")
+}
+func (delegate *Rabia) Campaign(ctx context.Context) error {
+	panic("Campaign called")
+}
+func (delegate *Rabia) Step(ctx context.Context, msg pb.Message) error {
+	panic("Step called")
+}
+func (delegate *Rabia) ReportUnreachable(id uint64) {
+	panic("ReportUnreachable called")
 }
