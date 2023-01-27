@@ -254,6 +254,7 @@ func RestartNode(c *Config) Node {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
+	fmt.Println("PING PONG")
 	var addresses = make([]string, len(peers))
 	for i, peer := range peers {
 		println(string(peer.Context))
