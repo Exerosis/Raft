@@ -662,10 +662,13 @@ type Rabia struct {
 /*
 This method allows an ETCD node to propose a message it just received from a client.
 */
+var INDEX = uint64(0)
+
 func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
-	var id = uint64(10)
+	var id = INDEX
+	INDEX++
 	delegate.Messages.Store(id, rabia.Message{Data: data, Context: ctx})
-	delegate.Queues.Offer(id)
+	delegate.Queues[id%uint64(len(delegate.Queues))].Offer(id)
 	return nil
 }
 
