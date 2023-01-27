@@ -47,6 +47,8 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 func (node *RabiaNode) Propose(
 	context context.Context, id uint64, data []byte,
 ) error {
+	println("PropID: ", id)
+	println("Prop Length: ", len(data))
 	println("PROPOSING: ", string(data))
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header, id)
@@ -100,8 +102,10 @@ func (node *RabiaNode) Run(
 			}
 			var identifier = make([]byte, 8)
 			fill(identifier)
+			println("ID: ", binary.LittleEndian.Uint64(identifier))
 			var length = make([]byte, 4)
 			fill(length)
+			println("Length: ", binary.LittleEndian.Uint32(length))
 			var data = make([]byte, binary.LittleEndian.Uint32(length))
 			fill(data)
 			println("ADDING: ", string(data))
