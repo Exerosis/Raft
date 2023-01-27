@@ -665,6 +665,7 @@ This method allows an ETCD node to propose a message it just received from a cli
 var INDEX = uint64(0)
 
 func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
+	println("PROPOSING: ", string(data))
 	var id = INDEX
 	INDEX++
 	delegate.Messages.Store(id, rabia.Message{Data: data, Context: ctx})
