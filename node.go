@@ -273,6 +273,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		}
 		addresses[i] = url.Host
 	}
+	println(addresses)
+	println(address)
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
 		RabiaNode: node,
