@@ -7,7 +7,7 @@ replace github.com/exerosis/RabiaGo => ../RabiaGo
 require (
 	github.com/better-concurrent/guc v0.0.0-20190520022744-eb29266403a1
 	github.com/cockroachdb/datadriven v1.0.2
-	github.com/exerosis/RabiaGo v0.0.0-20230120232319-dd27f0cdb8c5
+	github.com/exerosis/RabiaGo v0.0.0-20230127121507-d215c8b12cba
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
 	github.com/stretchr/testify v1.8.1
