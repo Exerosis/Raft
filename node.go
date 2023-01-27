@@ -264,12 +264,10 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
-		fmt.Printf("Type: %T", data["peerURLs"].([]any)[0].(string))
-		url, reason := url2.Parse(data["peerURLs"].([]any)[0].(string))
+		var url = data["peerURLs"].([]any)[0].(url2.URL)
 		if reason != nil {
 			panic(reason)
 		}
-		println(url.Host)
 		addresses[i] = url.Host
 	}
 	var node = rabia.MakeRabiaNode(addresses, 3000)
