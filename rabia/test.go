@@ -66,9 +66,11 @@ func (node *RabiaNode) Run(
 
 			var current = uint32(index)
 			var i = 0
+			println("Connecting")
 			proposals, reason := rabia.TCP(address, pipe+1, node.Addresses...)
 			states, reason := rabia.TCP(address, pipe+2, node.Addresses...)
 			votes, reason := rabia.TCP(address, pipe+3, node.Addresses...)
+			println("Connected")
 			if reason != nil {
 				lock.Lock()
 				defer lock.Unlock()
