@@ -22,6 +22,8 @@ import (
 	"github.com/exerosis/raft/rabia"
 	pb "github.com/exerosis/raft/raftpb"
 	url2 "net/url"
+	"os"
+	"strings"
 	"sync/atomic"
 )
 
@@ -256,6 +258,11 @@ func RestartNode(c *Config) Node {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
+	name, reason := os.Hostname()
+	if reason != nil {
+		panic(reason)
+	}
+	var hostname = strings.Split(name, ".")[0]
 	var addresses = make([]string, len(peers))
 	var address string
 	for i, peer := range peers {
@@ -268,8 +275,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
-		fmt.Printf("%d vs %d\n", uint64(data["id"].(float64)), config.ID)
-		if uint64(data["id"].(float64)) == config.ID {
+		if data["name"].(string) == hostname {
 			address = url.Host
 		}
 		addresses[i] = url.Host
