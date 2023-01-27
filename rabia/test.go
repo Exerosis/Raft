@@ -53,6 +53,8 @@ func (node *RabiaNode) Propose(
 	binary.LittleEndian.PutUint32(header, uint32(len(data)))
 	node.ProposeMutex.Lock()
 	var send = append(header, data...)
+	for node.spreader == nil {
+	}
 	reason := node.spreader.Send(send)
 	if reason != nil {
 		return reason
@@ -79,9 +81,8 @@ func (node *RabiaNode) Run(
 			others = append(others, other)
 		}
 	}
-	fmt.Printf("Others: %s\n", others)
-	fmt.Printf("Addresses: %s\n", node.Addresses)
 	spreader, reason := rabia.TCP(address, 2000, others...)
+	println("Connected!")
 	if reason != nil {
 		return reason
 	}
