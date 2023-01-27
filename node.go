@@ -280,7 +280,6 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		}
 		addresses[i] = url.Hostname()
 	}
-	fmt.Printf("Nodes: %s\n", addresses)
 	fmt.Printf("Address: %s\n", address)
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
@@ -666,7 +665,7 @@ This method allows an ETCD node to propose a message it just received from a cli
 func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
 	var id = uint64(10)
 	delegate.Messages.Store(id, rabia.Message{Data: data, Context: ctx})
-	delegate.Queue.Offer(id)
+	delegate.Queues.Offer(id)
 	return nil
 }
 
