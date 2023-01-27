@@ -257,6 +257,7 @@ func RestartNode(c *Config) Node {
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
 	var addresses = make([]string, len(peers))
+	var address string
 	for i, peer := range peers {
 		println(string(peer.Context))
 		var data map[string]any
@@ -268,6 +269,9 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
+		if data["id"].(uint64) == config.ID {
+			address = url.Host
+		}
 		addresses[i] = url.Host
 	}
 	var node = rabia.MakeRabiaNode(addresses, 3000)
@@ -277,7 +281,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
-		err := instance.Run("")
+		err := instance.Run(address)
 		if err != nil {
 			panic(err)
 		}
