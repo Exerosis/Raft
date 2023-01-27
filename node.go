@@ -245,12 +245,33 @@ func setupNode(c *Config, peers []Peer) *node {
 //
 // Peers must not be zero length; call RestartNode in that case.
 func StartNode(c *Config, peers []Peer) Node {
-	return StartRaft(c, peers)
-	//return StartRabia(c, peers)
+	//return StartRaft(c, peers)
+	return StartRabia(c, peers)
 }
 func RestartNode(c *Config) Node {
 	return RestartRaft(c)
 	//return RestartRabia(c)
+}
+
+func StartRabia(config *Config, peers []Peer) *Rabia {
+	var addresses = make([]string, len(peers))
+	for i, peer := range peers {
+		println(string(peer.Context))
+		addresses[i] = string(peer.Context)
+	}
+	var node = rabia.MakeRabiaNode(addresses, 3000)
+	var instance = &Rabia{
+		RabiaNode: node,
+		channel:   make(chan Ready),
+		entries:   make([]pb.Entry, len(node.Log.Logs)),
+	}
+	go func() {
+		err := instance.Run("")
+		if err != nil {
+			panic(err)
+		}
+	}()
+	return instance
 }
 
 func StartRaft(c *Config, peers []Peer) Node {
@@ -614,27 +635,6 @@ type Rabia struct {
 	*rabia.RabiaNode
 	channel chan Ready
 	entries []pb.Entry
-}
-
-func StartRabia(config *Config, peers []Peer) *Rabia {
-	var addresses = make([]string, len(peers)+1)
-	for i, peer := range peers {
-		var data = string(peer.Context)
-		addresses[i+1] = data
-	}
-	var node = rabia.MakeRabiaNode(addresses, 3000)
-	var instance = &Rabia{
-		RabiaNode: node,
-		channel:   make(chan Ready),
-		entries:   make([]pb.Entry, len(node.Log.Logs)),
-	}
-	go func() {
-		err := instance.Run("")
-		if err != nil {
-			panic(err)
-		}
-	}()
-	return instance
 }
 
 /*
