@@ -75,7 +75,9 @@ func (node *RabiaNode) Run(
 
 	var others = make([]string, len(node.Addresses)-1)
 	for _, other := range node.Addresses {
+		println("Other: ", other)
 		if other != address {
+			println("Added")
 			others = append(others, other)
 		}
 	}
