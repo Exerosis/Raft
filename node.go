@@ -276,7 +276,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			panic(reason)
 		}
 		if data["name"].(string) == hostname {
-			address = url.Host
+			address = url.Hostname()
 		}
 		addresses[i] = url.Host
 	}
