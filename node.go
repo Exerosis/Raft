@@ -268,7 +268,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
-		if data["id"].(uint64) == config.ID {
+		if uint64(data["id"].(float64)) == config.ID {
 			address = url.Host
 		}
 		addresses[i] = url.Host
