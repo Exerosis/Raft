@@ -73,13 +73,14 @@ func (node *RabiaNode) Run(
 	var log = node.Log
 	//messages map ig?
 
-	var others = make([]string, len(node.Addresses)-1)
+	var others []string
 	for _, other := range node.Addresses {
 		if other != address {
 			others = append(others, other)
 		}
 	}
 	fmt.Printf("Others: %s\n", others)
+	fmt.Printf("Addresses: %s\n", node.Addresses)
 	spreader, reason := rabia.TCP(address, 2000, others...)
 	if reason != nil {
 		return reason
