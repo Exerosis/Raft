@@ -664,12 +664,14 @@ This method allows an ETCD node to propose a message it just received from a cli
 */
 var INDEX = uint64(0)
 
-func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
+func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	println("PROPOSING: ", string(data))
 	var id = INDEX
 	INDEX++
-	delegate.Messages.Set(id, rabia.Message{Data: data, Context: ctx})
-	delegate.Queues[id%uint64(len(delegate.Queues))].Offer(id)
+	node.MessageMutex.Lock()
+	node.Messages[id] = rabia.Message{Data: data, Context: ctx}
+	node.MessageMutex.Unlock()
+	node.Queues[id%uint64(len(node.Queues))].Offer(id)
 	return nil
 }
 
@@ -680,19 +682,21 @@ entries as we can and send them to ETCD. This will bump forward the committed
 counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
-func (delegate *Rabia) Advance() {
+func (node *Rabia) Advance() {
 	var entry = 0
-	var highest = atomic.LoadUint64(&delegate.Highest)
-	for i := delegate.Committed; i < highest; i++ {
-		var index = i % uint64(len(delegate.Log.Logs))
-		var proposal = delegate.Log.Logs[index]
+	var highest = atomic.LoadUint64(&node.Highest)
+	for i := node.Committed; i < highest; i++ {
+		var index = i % uint64(len(node.Log.Logs))
+		var proposal = node.Log.Logs[index]
 		if proposal != 0 {
-			data, present := delegate.Messages.Get(proposal)
+			node.MessageMutex.RLock()
+			data, present := node.Messages[proposal]
+			node.MessageMutex.RUnlock()
 			if present {
-				if !delegate.Messages.Del(proposal) {
-					panic("Failed to remove!")
-				}
-				delegate.entries[entry] = pb.Entry{
+				node.MessageMutex.Lock()
+				delete(node.Messages, proposal)
+				node.MessageMutex.Unlock()
+				node.entries[entry] = pb.Entry{
 					Term:  0,
 					Index: i,
 					Data:  data.Data,
@@ -702,51 +706,51 @@ func (delegate *Rabia) Advance() {
 			}
 		}
 	}
-	atomic.StoreUint64(&delegate.Committed, highest)
-	delegate.channel <- Ready{
+	atomic.StoreUint64(&node.Committed, highest)
+	node.channel <- Ready{
 		HardState: pb.HardState{
 			Commit: highest,
 		},
-		Entries:          delegate.entries,
-		CommittedEntries: delegate.entries,
+		Entries:          node.entries,
+		CommittedEntries: node.entries,
 	}
 }
 
-func (delegate *Rabia) Ready() <-chan Ready {
-	return delegate.channel
+func (node *Rabia) Ready() <-chan Ready {
+	return node.channel
 }
-func (delegate *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
+func (node *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
 	println("Report snapshot called!")
 }
 
-func (delegate *Rabia) Status() Status {
+func (node *Rabia) Status() Status {
 	println("Someone is checking status.")
 	return Status{}
 }
-func (delegate *Rabia) Tick() {
+func (node *Rabia) Tick() {
 }
-func (delegate *Rabia) Stop() {
+func (node *Rabia) Stop() {
 	panic("Stop called")
 }
 
-func (delegate *Rabia) ProposeConfChange(ctx context.Context, cc pb.ConfChangeI) error {
+func (node *Rabia) ProposeConfChange(ctx context.Context, cc pb.ConfChangeI) error {
 	panic("ProposeConfChange called")
 }
-func (delegate *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
+func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
-func (delegate *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
+func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
 	panic("ReadIndex called")
 }
-func (delegate *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
+func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
 	panic("TransferLeadership called")
 }
-func (delegate *Rabia) Campaign(ctx context.Context) error {
+func (node *Rabia) Campaign(ctx context.Context) error {
 	panic("Campaign called")
 }
-func (delegate *Rabia) Step(ctx context.Context, msg pb.Message) error {
+func (node *Rabia) Step(ctx context.Context, msg pb.Message) error {
 	panic("Step called")
 }
-func (delegate *Rabia) ReportUnreachable(id uint64) {
+func (node *Rabia) ReportUnreachable(id uint64) {
 	panic("ReportUnreachable called")
 }
