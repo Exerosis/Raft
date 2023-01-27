@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/better-concurrent/guc"
+	"github.com/cornelk/hashmap"
 	"github.com/exerosis/RabiaGo/rabia"
 	"go.uber.org/multierr"
 	"sync"
@@ -21,7 +22,7 @@ type Message struct {
 type RabiaNode struct {
 	Log       *rabia.Log
 	Queues    []*guc.PriorityBlockingQueue
-	Messages  *guc.ConcurrentHashMap
+	Messages  *hashmap.Map[uint64, Message]
 	Pipes     []uint16
 	Addresses []string
 	Committed uint64
@@ -39,7 +40,7 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	}
 	return &RabiaNode{
 		rabia.MakeLog(uint16(len(addresses)), size), queues,
-		guc.NewConcurrentHashMap(100_000, 10_000),
+		hashmap.New[uint64, Message](),
 		pipes, addresses, uint64(0), uint64(0),
 	}
 }
@@ -80,7 +81,10 @@ func (node *RabiaNode) Run(
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
 				fmt.Println("Got:")
-				println(string(node.Messages.Store(message, nil).(Message).Data))
+				element, exists := node.Messages.Get(message)
+				if exists {
+					println(string(element.Data))
+				}
 				current += uint32(len(node.Pipes))
 				return nil
 			}, info)

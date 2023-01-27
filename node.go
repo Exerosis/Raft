@@ -668,7 +668,7 @@ func (delegate *Rabia) Propose(ctx context.Context, data []byte) error {
 	println("PROPOSING: ", string(data))
 	var id = INDEX
 	INDEX++
-	delegate.Messages.Store(id, rabia.Message{Data: data, Context: ctx})
+	delegate.Messages.Set(id, rabia.Message{Data: data, Context: ctx})
 	delegate.Queues[id%uint64(len(delegate.Queues))].Offer(id)
 	return nil
 }
@@ -687,13 +687,17 @@ func (delegate *Rabia) Advance() {
 		var index = i % uint64(len(delegate.Log.Logs))
 		var proposal = delegate.Log.Logs[index]
 		if proposal != 0 {
-			data, present := delegate.Messages.Load(proposal)
+			data, present := delegate.Messages.Get(proposal)
 			if present {
+				if !delegate.Messages.Del(proposal) {
+					panic("Failed to remove!")
+				}
 				delegate.entries[entry] = pb.Entry{
 					Term:  0,
 					Index: i,
-					Data:  data.([]byte),
+					Data:  data.Data,
 				}
+				data.Context.Done()
 				entry++
 			}
 		}
