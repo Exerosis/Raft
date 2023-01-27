@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"github.com/exerosis/raft/rabia"
 	pb "github.com/exerosis/raft/raftpb"
+	"math/rand"
 	url2 "net/url"
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 type SnapshotStatus int
@@ -662,17 +664,15 @@ type Rabia struct {
 /*
 This method allows an ETCD node to propose a message it just received from a client.
 */
-var INDEX = uint64(0)
-
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
-	println("PROPOSING: ", string(data))
-	var id = INDEX
-	INDEX++
-	node.MessageMutex.Lock()
-	node.Messages[id] = rabia.Message{Data: data, Context: ctx}
-	node.MessageMutex.Unlock()
-	node.Queues[id%uint64(len(node.Queues))].Offer(id)
-	return nil
+	var stamp = uint64(time.Now().UnixMilli())
+	var random = uint64(rand.Uint32())
+	host, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+	data = []byte(host)
+	return node.RabiaNode.Propose(ctx, random<<32|stamp, data)
 }
 
 /*
@@ -689,13 +689,13 @@ func (node *Rabia) Advance() {
 		var index = i % uint64(len(node.Log.Logs))
 		var proposal = node.Log.Logs[index]
 		if proposal != 0 {
-			node.MessageMutex.RLock()
+			node.ProposeMutex.RLock()
 			data, present := node.Messages[proposal]
-			node.MessageMutex.RUnlock()
+			node.ProposeMutex.RUnlock()
 			if present {
-				node.MessageMutex.Lock()
+				node.ProposeMutex.Lock()
 				delete(node.Messages, proposal)
-				node.MessageMutex.Unlock()
+				node.ProposeMutex.Unlock()
 				node.entries[entry] = pb.Entry{
 					Term:  0,
 					Index: i,

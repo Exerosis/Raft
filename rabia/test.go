@@ -2,10 +2,12 @@ package rabia
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"github.com/better-concurrent/guc"
 	"github.com/exerosis/RabiaGo/rabia"
 	"go.uber.org/multierr"
+	"net"
 	"sync"
 )
 
@@ -18,11 +20,12 @@ type RabiaNode struct {
 	Log          *rabia.Log
 	Queues       []*guc.PriorityBlockingQueue
 	Messages     map[uint64]Message
-	MessageMutex sync.RWMutex
+	ProposeMutex sync.RWMutex
 	Pipes        []uint16
 	Addresses    []string
 	Committed    uint64
 	Highest      uint64
+	spreader     *rabia.TcpMulticaster
 }
 
 const INFO = true
@@ -37,8 +40,26 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	return &RabiaNode{
 		rabia.MakeLog(uint16(len(addresses)), size), queues,
 		make(map[uint64]Message), sync.RWMutex{},
-		pipes, addresses, uint64(0), uint64(0),
+		pipes, addresses, uint64(0), uint64(0), nil,
 	}
+}
+
+func (node *RabiaNode) Propose(
+	context context.Context, id uint64, data []byte,
+) error {
+	println("PROPOSING: ", string(data))
+	header := make([]byte, 12)
+	binary.LittleEndian.PutUint64(header, id)
+	binary.LittleEndian.PutUint32(header, uint32(len(data)))
+	node.ProposeMutex.Lock()
+	reason := node.spreader.Send(append(header, data...))
+	if reason != nil {
+		return reason
+	}
+	node.Messages[id] = Message{Data: data, Context: context}
+	node.ProposeMutex.Unlock()
+	node.Queues[id%uint64(len(node.Queues))].Offer(id)
+	return nil
 }
 
 func (node *RabiaNode) Run(
@@ -50,6 +71,43 @@ func (node *RabiaNode) Run(
 	group.Add(len(node.Pipes))
 	var log = node.Log
 	//messages map ig?
+
+	var others = make([]string, len(node.Addresses)-1)
+	for _, other := range node.Addresses {
+		if other != address {
+			others = append(others, other)
+		}
+	}
+	spreader, reason := rabia.TCP(address, 2000, others...)
+	if reason != nil {
+		return reason
+	}
+	node.spreader = spreader
+	for _, inbound := range spreader.Inbound {
+		go func(inbound net.Conn) {
+			var fill = func(buffer []byte) {
+				for i := 0; i < len(buffer); {
+					amount, reason := inbound.Read(buffer)
+					if reason != nil {
+						panic(reason)
+					}
+					i += amount
+				}
+			}
+			var identifier = make([]byte, 8)
+			fill(identifier)
+			var length = make([]byte, 4)
+			fill(length)
+			var data = make([]byte, binary.LittleEndian.Uint32(length))
+			fill(data)
+			println("ADDING: ", string(data))
+			var id = binary.LittleEndian.Uint64(identifier)
+			node.ProposeMutex.Lock()
+			node.Messages[id] = Message{Data: data, Context: context.Background()}
+			node.ProposeMutex.Unlock()
+			node.Queues[id%uint64(len(node.Queues))].Offer(id)
+		}(inbound)
+	}
 
 	//var mark = time.Now().UnixNano()
 	for index, pipe := range node.Pipes {
@@ -77,8 +135,8 @@ func (node *RabiaNode) Run(
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
 				fmt.Println("Got:")
-				node.MessageMutex.RLock()
-				defer node.MessageMutex.RUnlock()
+				node.ProposeMutex.RLock()
+				defer node.ProposeMutex.RUnlock()
 				element, exists := node.Messages[message]
 				if exists {
 					println(string(element.Data))
