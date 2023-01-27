@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 	"net"
 	"sync"
+	"time"
 )
 
 type Message struct {
@@ -56,6 +57,7 @@ func (node *RabiaNode) Propose(
 	node.ProposeMutex.Lock()
 	var send = append(header, data...)
 	for node.spreader == nil {
+		time.Sleep(time.Millisecond)
 	}
 	reason := node.spreader.Send(send)
 	if reason != nil {
