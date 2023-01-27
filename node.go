@@ -263,8 +263,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
-		fmt.Printf("Type: %T", data["peerURLs"].([]any)[0])
-		url, reason := url2.Parse("")
+		fmt.Printf("Type: %T", data["peerURLs"].([]string)[0])
+		url, reason := url2.Parse(data["peerURLs"].([]string)[0])
 		if reason != nil {
 			panic(reason)
 		}
