@@ -140,7 +140,10 @@ func (node *RabiaNode) Run(
 			}
 			info("Connected!\n")
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				var next = queue.Take().(uint64)
+				//var next = queue.Take().(uint64)
+				fmt.Printf("Queue: %s\n", queue)
+				time.Sleep(time.Second)
+				var next = uint64(1235)
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
 				fmt.Println("Got:")
