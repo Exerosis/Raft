@@ -51,8 +51,8 @@ func (node *RabiaNode) Propose(
 	println("Prop Length: ", len(data))
 	println("PROPOSING: ", string(data))
 	header := make([]byte, 12)
-	binary.LittleEndian.PutUint64(header, id)
-	binary.LittleEndian.PutUint32(header, uint32(len(data)))
+	binary.LittleEndian.PutUint64(header[0:], id)
+	binary.LittleEndian.PutUint32(header[8:], uint32(len(data)))
 	node.ProposeMutex.Lock()
 	var send = append(header, data...)
 	for node.spreader == nil {
@@ -100,16 +100,15 @@ func (node *RabiaNode) Run(
 					i += amount
 				}
 			}
-			var identifier = make([]byte, 8)
-			fill(identifier)
-			println("ID: ", binary.LittleEndian.Uint64(identifier))
-			var length = make([]byte, 4)
-			fill(length)
-			println("Length: ", binary.LittleEndian.Uint32(length))
-			var data = make([]byte, binary.LittleEndian.Uint32(length))
+			var header = make([]byte, 12)
+			fill(header)
+			var id = binary.LittleEndian.Uint64(header[0:])
+			println("ID: ", id)
+			println("Length: ", binary.LittleEndian.Uint32(header[8:]))
+			var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
 			fill(data)
 			println("ADDING: ", string(data))
-			var id = binary.LittleEndian.Uint64(identifier)
+
 			node.ProposeMutex.Lock()
 			node.Messages[id] = Message{Data: data, Context: context.Background()}
 			node.ProposeMutex.Unlock()
