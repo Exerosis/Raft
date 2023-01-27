@@ -258,12 +258,12 @@ func RestartNode(c *Config) Node {
 func StartRabia(config *Config, peers []Peer) *Rabia {
 	var addresses = make([]string, len(peers))
 	for i, peer := range peers {
-		var data map[string][]string
+		var data map[string]any
 		var reason = json.Unmarshal(peer.Context, &data)
 		if reason != nil {
 			panic(reason)
 		}
-		url, reason := url2.Parse(data["peerUrls"][0])
+		url, reason := url2.Parse(data["peerUrls"].([]string)[0])
 		if reason != nil {
 			panic(reason)
 		}
