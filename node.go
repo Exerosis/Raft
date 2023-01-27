@@ -16,10 +16,12 @@ package raft
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/exerosis/raft/rabia"
 	pb "github.com/exerosis/raft/raftpb"
+	url2 "net/url"
 	"sync/atomic"
 )
 
@@ -254,11 +256,19 @@ func RestartNode(c *Config) Node {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
-	fmt.Println("PING PONG")
 	var addresses = make([]string, len(peers))
 	for i, peer := range peers {
-		println(string(peer.Context))
-		addresses[i] = string(peer.Context)
+		var data any
+		var reason = json.Unmarshal(peer.Context, &data)
+		if reason != nil {
+			panic(reason)
+		}
+		url, reason := url2.Parse(data.(map[string][]string)["peerUrls"][0])
+		if reason != nil {
+			panic(reason)
+		}
+		println(url.Host)
+		addresses[i] = url.Host
 	}
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
