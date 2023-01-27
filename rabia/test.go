@@ -56,7 +56,7 @@ func (node *RabiaNode) Run(
 
 	//var mark = time.Now().UnixNano()
 	for index, pipe := range node.Pipes {
-		go func(index int, pipe uint16, queue guc.Queue) {
+		go func(index int, pipe uint16, queue *guc.PriorityBlockingQueue) {
 			defer group.Done()
 			var info = func(format string, a ...interface{}) {
 				if INFO {
@@ -76,7 +76,7 @@ func (node *RabiaNode) Run(
 			}
 			info("Connected!\n")
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				var next = queue.Poll().(uint64)
+				var next = queue.Take().(uint64)
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
 				fmt.Println("Working?")
