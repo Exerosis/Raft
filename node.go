@@ -268,13 +268,14 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
+		fmt.Printf("%d vs %d\n", uint64(data["id"].(float64)), config.ID)
 		if uint64(data["id"].(float64)) == config.ID {
 			address = url.Host
 		}
 		addresses[i] = url.Host
 	}
-	println(addresses)
-	println(address)
+	fmt.Printf("Nodes: %s\n", addresses)
+	fmt.Printf("Address: %s\n", address)
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
 		RabiaNode: node,
