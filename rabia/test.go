@@ -79,7 +79,8 @@ func (node *RabiaNode) Run(
 				var next = queue.Take().(uint64)
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
-				fmt.Println("Working?")
+				fmt.Println("Got:")
+				println(string(node.Messages.Store(message, nil).(Message).Data))
 				current += uint32(len(node.Pipes))
 				return nil
 			}, info)
