@@ -10,10 +10,6 @@ import (
 	"sync"
 )
 
-func MakeMessage(data []byte, context context.Context) Message {
-	return Message{data, context}
-}
-
 type Message struct {
 	Data    []byte
 	Context context.Context
