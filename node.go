@@ -264,7 +264,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		if reason != nil {
 			panic(reason)
 		}
-		var url = data["peerURLs"].([]any)[0].(url2.URL)
+		url, reason := url2.Parse(data["peerURLs"].([]any)[0].(string))
 		if reason != nil {
 			panic(reason)
 		}
