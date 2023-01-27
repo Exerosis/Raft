@@ -52,7 +52,8 @@ func (node *RabiaNode) Propose(
 	binary.LittleEndian.PutUint64(header, id)
 	binary.LittleEndian.PutUint32(header, uint32(len(data)))
 	node.ProposeMutex.Lock()
-	reason := node.spreader.Send(append(header, data...))
+	var send = append(header, data...)
+	reason := node.spreader.Send(send)
 	if reason != nil {
 		return reason
 	}
