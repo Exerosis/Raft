@@ -141,14 +141,16 @@ func (node *RabiaNode) Run(
 					println(it.(uint64))
 				})
 				//time.Sleep(time.Hour)
-				var next = uint64(1235)
+				var next = queue.Take().(uint64)
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
-				fmt.Println("Got:")
 				node.ProposeMutex.RLock()
 				defer node.ProposeMutex.RUnlock()
 				element, exists := node.Messages[message]
 				if exists {
+					node.ProposeMutex.Lock()
+					delete(node.Messages, message)
+					node.ProposeMutex.Unlock()
 					println(string(element.Data))
 				}
 				current += uint32(len(node.Pipes))
