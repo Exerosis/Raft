@@ -298,6 +298,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	}()
 	go func() {
 		for {
+			time.Sleep(time.Millisecond)
 			var entry = 0
 			var highest = atomic.LoadUint64(&instance.Highest)
 			for i := instance.Committed; i < highest; i++ {
@@ -323,15 +324,17 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 				}
 			}
 			atomic.StoreUint64(&instance.Committed, highest)
-			println("Entries: ", entry)
-			println("Size: ", len(instance.entries[:entry]))
-			println("Highest: ", highest)
+			if entry > 0 {
+				println("Entries: ", entry)
+				println("Size: ", len(instance.entries[:entry]))
+				println("Highest: ", highest)
+			}
 			instance.channel <- Ready{
-				//HardState: pb.HardState{
-				//	Commit: highest,
-				//},
-				//Entries:          node.entries[:entry],
-				//CommittedEntries: node.entries[:entry],
+				HardState: pb.HardState{
+					Commit: highest,
+				},
+				Entries:          instance.entries[:entry],
+				CommittedEntries: instance.entries[:entry],
 			}
 		}
 	}()
