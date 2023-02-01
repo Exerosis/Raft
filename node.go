@@ -722,6 +722,13 @@ func (node *Rabia) Advance() {
 }
 
 func (node *Rabia) Ready() <-chan Ready {
+	node.channel <- Ready{
+		HardState: pb.HardState{
+			Commit: 0,
+		},
+		Entries:          node.entries,
+		CommittedEntries: node.entries,
+	}
 	return node.channel
 }
 func (node *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
