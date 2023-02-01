@@ -9,6 +9,7 @@ import (
 	"go.uber.org/multierr"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -123,7 +124,7 @@ func (node *RabiaNode) Run(
 				}
 			}
 
-			var current = uint32(index)
+			var current = uint64(index)
 			proposals, reason := rabia.TCP(address, pipe+1, node.Addresses...)
 			states, reason := rabia.TCP(address, pipe+2, node.Addresses...)
 			votes, reason := rabia.TCP(address, pipe+3, node.Addresses...)
@@ -135,25 +136,15 @@ func (node *RabiaNode) Run(
 			}
 			info("Connected!\n")
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				//var next = queue.Take().(uint64)
-				println("Elements:")
-				queue.ForEach(func(it interface{}) {
-					println(it.(uint64))
-				})
-				//time.Sleep(time.Hour)
 				var next = queue.Take().(uint64)
-				return uint16(current % log.Size), next, nil
+				return uint16(current % uint64(log.Size)), next, nil
 			}, func(slot uint16, message uint64) error {
-				node.ProposeMutex.RLock()
-				element, exists := node.Messages[message]
-				node.ProposeMutex.RUnlock()
-				if exists {
-					node.ProposeMutex.Lock()
-					delete(node.Messages, message)
-					node.ProposeMutex.Unlock()
-					println(string(element.Data))
+				log.Logs[current%uint64(log.Size)] = message
+				var value = atomic.LoadUint64(&node.Highest)
+				for value < current && !atomic.CompareAndSwapUint64(&node.Highest, value, current) {
+					value = atomic.LoadUint64(&node.Highest)
 				}
-				current += uint32(len(node.Pipes))
+				current += uint64(len(node.Pipes))
 				return nil
 			}, info)
 			if reason != nil {
