@@ -145,8 +145,8 @@ func (node *RabiaNode) Run(
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
 				node.ProposeMutex.RLock()
-				defer node.ProposeMutex.RUnlock()
 				element, exists := node.Messages[message]
+				node.ProposeMutex.RUnlock()
 				if exists {
 					node.ProposeMutex.Lock()
 					delete(node.Messages, message)
