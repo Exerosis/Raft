@@ -25,7 +25,6 @@ import (
 	url2 "net/url"
 	"os"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -691,34 +690,34 @@ left in the ring buffer.
 */
 func (node *Rabia) Advance() {
 	println("Advance")
-	var entry = 0
-	var highest = atomic.LoadUint64(&node.Highest)
-	for i := node.Committed; i < highest; i++ {
-		var index = i % uint64(len(node.Log.Logs))
-		var proposal = node.Log.Logs[index]
-		if proposal != 0 {
-			node.ProposeMutex.RLock()
-			data, present := node.Messages[proposal]
-			node.ProposeMutex.RUnlock()
-			if present {
-				println("FOUND TO COMMIT: ", string(data.Data))
-				node.ProposeMutex.Lock()
-				delete(node.Messages, proposal)
-				node.ProposeMutex.Unlock()
-				node.entries[entry] = pb.Entry{
-					Term:  0,
-					Index: i,
-					Data:  data.Data,
-				}
-				data.Context.Done()
-				entry++
-			}
-		}
-	}
-	atomic.StoreUint64(&node.Committed, highest)
-	println("Entries: ", entry)
-	println("Size: ", len(node.entries[:entry]))
-	println("Highest: ", highest)
+	//var entry = 0
+	//var highest = atomic.LoadUint64(&node.Highest)
+	//for i := node.Committed; i < highest; i++ {
+	//	var index = i % uint64(len(node.Log.Logs))
+	//	var proposal = node.Log.Logs[index]
+	//	if proposal != 0 {
+	//		node.ProposeMutex.RLock()
+	//		data, present := node.Messages[proposal]
+	//		node.ProposeMutex.RUnlock()
+	//		if present {
+	//			println("FOUND TO COMMIT: ", string(data.Data))
+	//			node.ProposeMutex.Lock()
+	//			delete(node.Messages, proposal)
+	//			node.ProposeMutex.Unlock()
+	//			node.entries[entry] = pb.Entry{
+	//				Term:  0,
+	//				Index: i,
+	//				Data:  data.Data,
+	//			}
+	//			data.Context.Done()
+	//			entry++
+	//		}
+	//	}
+	//}
+	//atomic.StoreUint64(&node.Committed, highest)
+	//println("Entries: ", entry)
+	//println("Size: ", len(node.entries[:entry]))
+	//println("Highest: ", highest)
 	println("Advanced")
 	go func(ready Ready) {
 		node.channel <- ready
