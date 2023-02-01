@@ -716,19 +716,18 @@ func (node *Rabia) Advance() {
 		HardState: pb.HardState{
 			Commit: highest,
 		},
-		Entries:          node.entries,
-		CommittedEntries: node.entries,
+		Entries:          node.entries[:entry],
+		CommittedEntries: node.entries[:entry],
 	}
 }
 
 func (node *Rabia) Ready() <-chan Ready {
-	node.channel <- Ready{
-		HardState: pb.HardState{
-			Commit: 0,
-		},
-		Entries:          node.entries,
-		CommittedEntries: node.entries,
-	}
+	println("Got ready channel")
+	go func() {
+		time.Sleep(time.Second)
+		println("Sending initial")
+		node.channel <- Ready{}
+	}()
 	return node.channel
 }
 func (node *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
