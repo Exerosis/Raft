@@ -25,6 +25,7 @@ import (
 	url2 "net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -286,6 +287,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	var instance = &Rabia{
 		RabiaNode: node,
 		channel:   make(chan Ready),
+		advance:   make(chan int),
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
@@ -295,8 +297,40 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		}
 	}()
 	go func() {
-		instance.channel <- Ready{}
-		println("Wrote out ready!")
+		var ready Ready
+		select {
+		case instance.channel <- ready:
+			println("Wrote ready")
+		case <-instance.advance:
+
+			println("Advance")
+			var entry = 0
+			var highest = atomic.LoadUint64(&instance.Highest)
+			for i := instance.Committed; i < highest; i++ {
+				var index = i % uint64(len(instance.Log.Logs))
+				var proposal = instance.Log.Logs[index]
+				if proposal != 0 {
+					instance.ProposeMutex.RLock()
+					data, present := instance.Messages[proposal]
+					instance.ProposeMutex.RUnlock()
+					if present {
+						println("FOUND TO COMMIT: ", string(data.Data))
+						instance.ProposeMutex.Lock()
+						delete(instance.Messages, proposal)
+						instance.ProposeMutex.Unlock()
+						instance.entries[entry] = pb.Entry{
+							Term:  0,
+							Index: i,
+							Data:  data.Data,
+						}
+						data.Context.Done()
+						entry++
+					}
+				}
+			}
+			ready = Ready{}
+			println("Advanced")
+		}
 	}()
 	return instance
 }
@@ -661,6 +695,7 @@ func (n *node) ReadIndex(ctx context.Context, rctx []byte) error {
 type Rabia struct {
 	*rabia.RabiaNode
 	channel chan Ready
+	advance chan int
 	entries []pb.Entry
 }
 
@@ -690,45 +725,22 @@ left in the ring buffer.
 */
 func (node *Rabia) Advance() {
 	println("Advance")
-	//var entry = 0
-	//var highest = atomic.LoadUint64(&node.Highest)
-	//for i := node.Committed; i < highest; i++ {
-	//	var index = i % uint64(len(node.Log.Logs))
-	//	var proposal = node.Log.Logs[index]
-	//	if proposal != 0 {
-	//		node.ProposeMutex.RLock()
-	//		data, present := node.Messages[proposal]
-	//		node.ProposeMutex.RUnlock()
-	//		if present {
-	//			println("FOUND TO COMMIT: ", string(data.Data))
-	//			node.ProposeMutex.Lock()
-	//			delete(node.Messages, proposal)
-	//			node.ProposeMutex.Unlock()
-	//			node.entries[entry] = pb.Entry{
-	//				Term:  0,
-	//				Index: i,
-	//				Data:  data.Data,
-	//			}
-	//			data.Context.Done()
-	//			entry++
-	//		}
-	//	}
-	//}
+	node.advance <- 0
 	//atomic.StoreUint64(&node.Committed, highest)
 	//println("Entries: ", entry)
 	//println("Size: ", len(node.entries[:entry]))
 	//println("Highest: ", highest)
-	println("Advanced")
-	go func(ready Ready) {
-		node.channel <- ready
-		println("Wrote advance")
-	}(Ready{
-		//HardState: pb.HardState{
-		//	Commit: highest,
-		//},
-		//Entries:          node.entries[:entry],
-		//CommittedEntries: node.entries[:entry],
-	})
+	//println("Advanced")
+	//go func(ready Ready) {
+	//	node.channel <- ready
+	//	println("Wrote advance")
+	//}(Ready{
+	//	//HardState: pb.HardState{
+	//	//	Commit: highest,
+	//	//},
+	//	//Entries:          node.entries[:entry],
+	//	//CommittedEntries: node.entries[:entry],
+	//})
 }
 
 func (node *Rabia) Ready() <-chan Ready {
