@@ -287,7 +287,6 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	var instance = &Rabia{
 		RabiaNode: node,
 		channel:   make(chan Ready),
-		advance:   make(chan int),
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
@@ -333,9 +332,11 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 				HardState: pb.HardState{
 					Commit: highest,
 				},
+				ReadStates:       instance.states,
 				Entries:          instance.entries[:entry],
 				CommittedEntries: instance.entries[:entry],
 			}
+			instance.states = nil
 		}
 	}()
 	return instance
@@ -701,7 +702,8 @@ func (n *node) ReadIndex(ctx context.Context, rctx []byte) error {
 type Rabia struct {
 	*rabia.RabiaNode
 	channel chan Ready
-	advance chan int
+	state   int
+	states  []ReadState
 	entries []pb.Entry
 }
 
@@ -756,7 +758,10 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
+
 	println("ReadIndex called")
+	var highest = atomic.LoadUint64(&node.Highest)
+	node.states = append(node.states, ReadState{highest, rctx})
 	return nil
 }
 func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
