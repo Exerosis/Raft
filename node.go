@@ -25,6 +25,7 @@ import (
 	url2 "net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -296,45 +297,42 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		}
 	}()
 	go func() {
-		var ready Ready
-		go func() {
-			for {
-				instance.channel <- ready
-				println("Wrote ready")
+		for {
+			var entry = 0
+			var highest = atomic.LoadUint64(&instance.Highest)
+			for i := instance.Committed; i < highest; i++ {
+				var index = i % uint64(len(instance.Log.Logs))
+				var proposal = instance.Log.Logs[index]
+				if proposal != 0 {
+					instance.ProposeMutex.RLock()
+					data, present := instance.Messages[proposal]
+					instance.ProposeMutex.RUnlock()
+					if present {
+						println("FOUND TO COMMIT: ", string(data.Data))
+						instance.ProposeMutex.Lock()
+						delete(instance.Messages, proposal)
+						instance.ProposeMutex.Unlock()
+						instance.entries[entry] = pb.Entry{
+							Term:  0,
+							Index: i,
+							Data:  data.Data,
+						}
+						data.Context.Done()
+						entry++
+					}
+				}
 			}
-		}()
-		select {
-		//case instance.channel <- ready:
-		//	println("Wrote ready")
-		case <-instance.advance:
-			println("Advance")
-			//var entry = 0
-			//var highest = atomic.LoadUint64(&instance.Highest)
-			//for i := instance.Committed; i < highest; i++ {
-			//	var index = i % uint64(len(instance.Log.Logs))
-			//	var proposal = instance.Log.Logs[index]
-			//	if proposal != 0 {
-			//		instance.ProposeMutex.RLock()
-			//		data, present := instance.Messages[proposal]
-			//		instance.ProposeMutex.RUnlock()
-			//		if present {
-			//			println("FOUND TO COMMIT: ", string(data.Data))
-			//			instance.ProposeMutex.Lock()
-			//			delete(instance.Messages, proposal)
-			//			instance.ProposeMutex.Unlock()
-			//			instance.entries[entry] = pb.Entry{
-			//				Term:  0,
-			//				Index: i,
-			//				Data:  data.Data,
-			//			}
-			//			data.Context.Done()
-			//			entry++
-			//		}
-			//	}
-			//}
-			//ready = Ready{}
-			println("Advanced")
-		default:
+			atomic.StoreUint64(&instance.Committed, highest)
+			println("Entries: ", entry)
+			println("Size: ", len(instance.entries[:entry]))
+			println("Highest: ", highest)
+			instance.channel <- Ready{
+				//HardState: pb.HardState{
+				//	Commit: highest,
+				//},
+				//Entries:          node.entries[:entry],
+				//CommittedEntries: node.entries[:entry],
+			}
 		}
 	}()
 	return instance
@@ -730,22 +728,6 @@ left in the ring buffer.
 */
 func (node *Rabia) Advance() {
 	println("Called Advance")
-	//node.advance <- 0
-	//atomic.StoreUint64(&node.Committed, highest)
-	//println("Entries: ", entry)
-	//println("Size: ", len(node.entries[:entry]))
-	//println("Highest: ", highest)
-	//println("Advanced")
-	//go func(ready Ready) {
-	//	node.channel <- ready
-	//	println("Wrote advance")
-	//}(Ready{
-	//	//HardState: pb.HardState{
-	//	//	Commit: highest,
-	//	//},
-	//	//Entries:          node.entries[:entry],
-	//	//CommittedEntries: node.entries[:entry],
-	//})
 }
 
 func (node *Rabia) Ready() <-chan Ready {
