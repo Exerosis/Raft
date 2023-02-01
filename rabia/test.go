@@ -48,8 +48,6 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 func (node *RabiaNode) Propose(
 	context context.Context, id uint64, data []byte,
 ) error {
-	println("PropID: ", id)
-	println("Prop Length: ", len(data))
 	println("PROPOSING: ", string(data))
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header[0:], id)
@@ -94,7 +92,6 @@ func (node *RabiaNode) Run(
 	for _, inbound := range spreader.Inbound {
 		go func(inbound net.Conn) {
 			for {
-				fmt.Printf("Waiting on: %s\n", inbound.RemoteAddr())
 				var fill = func(buffer []byte) {
 					for i := 0; i < len(buffer); {
 						amount, reason := inbound.Read(buffer)
@@ -107,8 +104,6 @@ func (node *RabiaNode) Run(
 				var header = make([]byte, 12)
 				fill(header)
 				var id = binary.LittleEndian.Uint64(header[0:])
-				println("ID: ", id)
-				println("Length: ", binary.LittleEndian.Uint32(header[8:]))
 				var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
 				fill(data)
 				println("ADDING: ", string(data))
