@@ -729,8 +729,8 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
-	println("Advance")
-	node.advance <- 0
+	println("Called Advance")
+	//node.advance <- 0
 	//atomic.StoreUint64(&node.Committed, highest)
 	//println("Entries: ", entry)
 	//println("Size: ", len(node.entries[:entry]))
