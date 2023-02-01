@@ -664,6 +664,8 @@ type Rabia struct {
 /*
 This method allows an ETCD node to propose a message it just received from a client.
 */
+var BLAHBLAH = 0
+
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	var stamp = uint64(time.Now().UnixMilli())
 	var random = uint64(rand.Uint32())
@@ -671,7 +673,8 @@ func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	if err != nil {
 		return err
 	}
-	data = []byte(host)
+	data = []byte(host + fmt.Sprintf(" = %d", BLAHBLAH))
+	BLAHBLAH++
 	return node.RabiaNode.Propose(ctx, random<<32|stamp, data)
 }
 

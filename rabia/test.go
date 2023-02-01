@@ -145,7 +145,7 @@ func (node *RabiaNode) Run(
 				queue.ForEach(func(it interface{}) {
 					println(it.(uint64))
 				})
-				time.Sleep(time.Second)
+				time.Sleep(time.Hour)
 				var next = uint64(1235)
 				return uint16(current % log.Size), next, nil
 			}, func(slot uint16, message uint64) error {
