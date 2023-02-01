@@ -756,7 +756,8 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
-	panic("ReadIndex called")
+	println("ReadIndex called")
+	return nil
 }
 func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
 	panic("TransferLeadership called")
