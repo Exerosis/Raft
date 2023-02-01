@@ -294,10 +294,10 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			panic(err)
 		}
 	}()
-	//go func() {
-	//	instance.channel <- Ready{}
-	//	println("Wrote out ready!")
-	//}()
+	go func() {
+		instance.channel <- Ready{}
+		println("Wrote out ready!")
+	}()
 	return instance
 }
 
