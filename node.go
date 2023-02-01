@@ -295,6 +295,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			panic(err)
 		}
 	}()
+	instance.channel <- Ready{}
 	return instance
 }
 
