@@ -260,7 +260,6 @@ func RestartNode(c *Config) Node {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
-	println("Async storage writes: ", config.AsyncStorageWrites)
 	name, reason := os.Hostname()
 	if reason != nil {
 		panic(reason)
@@ -727,15 +726,10 @@ func (node *Rabia) Advance() {
 		//Entries:          node.entries[:entry],
 		//CommittedEntries: node.entries[:entry],
 	}
+	println("Advanced")
 }
 
 func (node *Rabia) Ready() <-chan Ready {
-	println("Got ready channel")
-	//go func() {
-	//	time.Sleep(time.Second)
-	//	println("Sending initial")
-	//	node.channel <- Ready{}
-	//}()
 	return node.channel
 }
 func (node *Rabia) ReportSnapshot(id uint64, status SnapshotStatus) {
