@@ -696,6 +696,7 @@ func (node *Rabia) Advance() {
 			data, present := node.Messages[proposal]
 			node.ProposeMutex.RUnlock()
 			if present {
+				println("FOUND TO COMMIT: ", string(data.Data))
 				node.ProposeMutex.Lock()
 				delete(node.Messages, proposal)
 				node.ProposeMutex.Unlock()
