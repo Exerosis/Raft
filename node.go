@@ -328,6 +328,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 				println("Size: ", len(instance.entries[:entry]))
 				println("Highest: ", highest)
 			}
+			println(len(instance.states))
 			instance.channel <- Ready{
 				HardState: pb.HardState{
 					Commit: highest,
