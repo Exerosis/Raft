@@ -719,6 +719,7 @@ func (node *Rabia) Advance() {
 	println("Entries: ", entry)
 	println("Size: ", len(node.entries[:entry]))
 	println("Highest: ", highest)
+	println("Advanced")
 	go func(ready Ready) {
 		node.channel <- ready
 		println("Wrote advanace")
@@ -729,7 +730,6 @@ func (node *Rabia) Advance() {
 		//Entries:          node.entries[:entry],
 		//CommittedEntries: node.entries[:entry],
 	})
-	println("Advanced")
 }
 
 func (node *Rabia) Ready() <-chan Ready {
