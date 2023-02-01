@@ -260,6 +260,7 @@ func RestartNode(c *Config) Node {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
+	println("Async storage writes: ", config.AsyncStorageWrites)
 	name, reason := os.Hostname()
 	if reason != nil {
 		panic(reason)
