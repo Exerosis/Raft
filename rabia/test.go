@@ -93,6 +93,7 @@ func (node *RabiaNode) Run(
 	node.spreader = spreader
 	for _, inbound := range spreader.Inbound {
 		go func(inbound net.Conn) {
+			println("Waiting on: ", inbound.RemoteAddr())
 			var fill = func(buffer []byte) {
 				for i := 0; i < len(buffer); {
 					amount, reason := inbound.Read(buffer)
