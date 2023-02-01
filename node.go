@@ -722,7 +722,7 @@ func (node *Rabia) Advance() {
 	println("Advanced")
 	go func(ready Ready) {
 		node.channel <- ready
-		println("Wrote advanace")
+		println("Wrote advance")
 	}(Ready{
 		//HardState: pb.HardState{
 		//	Commit: highest,
