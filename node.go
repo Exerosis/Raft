@@ -326,7 +326,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			//		}
 			//	}
 			//}
-			ready = Ready{}
+			//ready = Ready{}
 			println("Advanced")
 		}
 	}()
