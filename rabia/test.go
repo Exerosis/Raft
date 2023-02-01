@@ -93,29 +93,31 @@ func (node *RabiaNode) Run(
 	node.spreader = spreader
 	for _, inbound := range spreader.Inbound {
 		go func(inbound net.Conn) {
-			fmt.Printf("Waiting on: %s\n", inbound.RemoteAddr())
-			var fill = func(buffer []byte) {
-				for i := 0; i < len(buffer); {
-					amount, reason := inbound.Read(buffer)
-					if reason != nil {
-						panic(reason)
+			for {
+				fmt.Printf("Waiting on: %s\n", inbound.RemoteAddr())
+				var fill = func(buffer []byte) {
+					for i := 0; i < len(buffer); {
+						amount, reason := inbound.Read(buffer)
+						if reason != nil {
+							panic(reason)
+						}
+						i += amount
 					}
-					i += amount
 				}
-			}
-			var header = make([]byte, 12)
-			fill(header)
-			var id = binary.LittleEndian.Uint64(header[0:])
-			println("ID: ", id)
-			println("Length: ", binary.LittleEndian.Uint32(header[8:]))
-			var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
-			fill(data)
-			println("ADDING: ", string(data))
+				var header = make([]byte, 12)
+				fill(header)
+				var id = binary.LittleEndian.Uint64(header[0:])
+				println("ID: ", id)
+				println("Length: ", binary.LittleEndian.Uint32(header[8:]))
+				var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
+				fill(data)
+				println("ADDING: ", string(data))
 
-			node.ProposeMutex.Lock()
-			node.Messages[id] = Message{Data: data, Context: context.Background()}
-			node.ProposeMutex.Unlock()
-			node.Queues[id%uint64(len(node.Queues))].Offer(id)
+				node.ProposeMutex.Lock()
+				node.Messages[id] = Message{Data: data, Context: context.Background()}
+				node.ProposeMutex.Unlock()
+				node.Queues[id%uint64(len(node.Queues))].Offer(id)
+			}
 		}(inbound)
 	}
 
