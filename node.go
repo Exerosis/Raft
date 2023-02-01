@@ -712,6 +712,9 @@ func (node *Rabia) Advance() {
 		}
 	}
 	atomic.StoreUint64(&node.Committed, highest)
+	println("Entries: ", entry)
+	println("Size: ", len(node.entries[:entry]))
+	println("Highest: ", highest)
 	node.channel <- Ready{
 		HardState: pb.HardState{
 			Commit: highest,
