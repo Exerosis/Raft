@@ -297,10 +297,15 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	}()
 	go func() {
 		var ready Ready
-		instance.channel <- ready
+		go func() {
+			for {
+				instance.channel <- ready
+				println("Wrote ready")
+			}
+		}()
 		select {
-		case instance.channel <- ready:
-			println("Wrote ready")
+		//case instance.channel <- ready:
+		//	println("Wrote ready")
 		case <-instance.advance:
 			println("Advance")
 			//var entry = 0
