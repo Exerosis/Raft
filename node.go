@@ -718,12 +718,6 @@ var BLAHBLAH = 0
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	var stamp = uint64(time.Now().UnixMilli())
 	var random = uint64(rand.Uint32())
-	//host, err := os.Hostname()
-	//if err != nil {
-	//	return err
-	//}
-	//data = []byte(host + fmt.Sprintf(" = %d", BLAHBLAH))
-	//BLAHBLAH++
 	return node.RabiaNode.Propose(ctx, random<<32|stamp, data)
 }
 
@@ -761,7 +755,6 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
-
 	println("ReadIndex called")
 	var highest = atomic.LoadUint64(&node.Highest)
 	node.states = append(node.states, ReadState{highest, rctx})
