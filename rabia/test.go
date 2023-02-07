@@ -50,6 +50,7 @@ func (node *RabiaNode) Propose(
 	context context.Context, id uint64, data []byte,
 ) error {
 	fmt.Printf("Context: %s\n", context)
+	context.Done()
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header[0:], id)
 	binary.LittleEndian.PutUint32(header[8:], uint32(len(data)))
