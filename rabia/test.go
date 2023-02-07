@@ -49,7 +49,7 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 func (node *RabiaNode) Propose(
 	context context.Context, id uint64, data []byte,
 ) error {
-	fmt.Printf("Context: %s\n", context)
+	println("Proposing out: ", string(data))
 	context.Done()
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header[0:], id)

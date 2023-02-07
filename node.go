@@ -679,9 +679,9 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			}
 			atomic.StoreUint64(&instance.Committed, highest)
 			if entry > 0 {
-				println("Entries: ", entry)
-				println("Size: ", len(instance.entries[:entry]))
-				println("Highest: ", highest)
+				//println("Entries: ", entry)
+				//println("Size: ", len(instance.entries[:entry]))
+				//println("Highest: ", highest)
 			}
 			if len(instance.states) > 0 {
 				println("FOUND SOME READ STATES")
