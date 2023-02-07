@@ -259,92 +259,6 @@ func RestartNode(c *Config) Node {
 	//return RestartRabia(c)
 }
 
-func StartRabia(config *Config, peers []Peer) *Rabia {
-	name, reason := os.Hostname()
-	if reason != nil {
-		panic(reason)
-	}
-	var hostname = strings.Split(name, ".")[0]
-	var addresses = make([]string, len(peers))
-	var address string
-	for i, peer := range peers {
-		var data map[string]any
-		var reason = json.Unmarshal(peer.Context, &data)
-		if reason != nil {
-			panic(reason)
-		}
-		url, reason := url2.Parse(data["peerURLs"].([]any)[0].(string))
-		if reason != nil {
-			panic(reason)
-		}
-		if data["name"].(string) == hostname {
-			address = url.Hostname()
-		}
-		addresses[i] = url.Hostname()
-	}
-	fmt.Printf("Address: %s\n", address)
-	var node = rabia.MakeRabiaNode(addresses, 3000)
-	var instance = &Rabia{
-		RabiaNode: node,
-		channel:   make(chan Ready),
-		entries:   make([]pb.Entry, len(node.Log.Logs)),
-	}
-	go func() {
-		err := instance.Run(address)
-		if err != nil {
-			panic(err)
-		}
-	}()
-	go func() {
-		for {
-			time.Sleep(time.Millisecond)
-			var entry = 0
-			var highest = atomic.LoadUint64(&instance.Highest)
-			for i := instance.Committed; i < highest; i++ {
-				var index = i % uint64(len(instance.Log.Logs))
-				var proposal = instance.Log.Logs[index]
-				if proposal != 0 {
-					instance.ProposeMutex.RLock()
-					data, present := instance.Messages[proposal]
-					instance.ProposeMutex.RUnlock()
-					if present {
-						println("FOUND TO COMMIT: ", string(data.Data))
-						instance.ProposeMutex.Lock()
-						delete(instance.Messages, proposal)
-						instance.ProposeMutex.Unlock()
-						instance.entries[entry] = pb.Entry{
-							Term:  0,
-							Index: i,
-							Data:  data.Data,
-						}
-						data.Context.Done()
-						entry++
-					}
-				}
-			}
-			atomic.StoreUint64(&instance.Committed, highest)
-			if entry > 0 {
-				println("Entries: ", entry)
-				println("Size: ", len(instance.entries[:entry]))
-				println("Highest: ", highest)
-			}
-			if len(instance.states) > 0 {
-				println("FOUND SOME READ STATES")
-			}
-			instance.channel <- Ready{
-				HardState: pb.HardState{
-					Commit: highest,
-				},
-				ReadStates:       instance.states,
-				Entries:          instance.entries[:entry],
-				CommittedEntries: instance.entries[:entry],
-			}
-			instance.states = nil
-		}
-	}()
-	return instance
-}
-
 func StartRaft(c *Config, peers []Peer) Node {
 	fmt.Println("start node")
 	for _, peer := range peers {
@@ -356,16 +270,6 @@ func StartRaft(c *Config, peers []Peer) Node {
 	return n
 }
 
-func RestartRabia(c *Config) Node {
-	_, config, _ := c.Storage.InitialState()
-	peers, err := config.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	println(string(peers))
-	//parse out peers somehow?
-	return StartRabia(c, []Peer{})
-}
 func RestartRaft(c *Config) Node {
 	fmt.Println("restart node")
 	rn, err := NewRawNode(c)
@@ -710,12 +614,106 @@ type Rabia struct {
 	entries []pb.Entry
 }
 
+func StartRabia(config *Config, peers []Peer) *Rabia {
+	name, reason := os.Hostname()
+	if reason != nil {
+		panic(reason)
+	}
+	var hostname = strings.Split(name, ".")[0]
+	var addresses = make([]string, len(peers))
+	var address string
+	for i, peer := range peers {
+		var data map[string]any
+		var reason = json.Unmarshal(peer.Context, &data)
+		if reason != nil {
+			panic(reason)
+		}
+		url, reason := url2.Parse(data["peerURLs"].([]any)[0].(string))
+		if reason != nil {
+			panic(reason)
+		}
+		if data["name"].(string) == hostname {
+			address = url.Hostname()
+		}
+		addresses[i] = url.Hostname()
+	}
+	fmt.Printf("Address: %s\n", address)
+	var node = rabia.MakeRabiaNode(addresses, 3000)
+	var instance = &Rabia{
+		RabiaNode: node,
+		channel:   make(chan Ready),
+		entries:   make([]pb.Entry, len(node.Log.Logs)),
+	}
+	go func() {
+		err := instance.Run(address)
+		if err != nil {
+			panic(err)
+		}
+	}()
+	go func() {
+		for {
+			time.Sleep(time.Millisecond)
+			var entry = 0
+			var highest = atomic.LoadUint64(&instance.Highest)
+			for i := instance.Committed; i < highest; i++ {
+				var index = i % uint64(len(instance.Log.Logs))
+				var proposal = instance.Log.Logs[index]
+				if proposal != 0 {
+					instance.ProposeMutex.RLock()
+					data, present := instance.Messages[proposal]
+					instance.ProposeMutex.RUnlock()
+					if present {
+						instance.ProposeMutex.Lock()
+						delete(instance.Messages, proposal)
+						instance.ProposeMutex.Unlock()
+						instance.entries[entry] = pb.Entry{
+							Term:  0,
+							Index: i,
+							Data:  data.Data,
+						}
+						data.Context.Done()
+						entry++
+					}
+				}
+			}
+			atomic.StoreUint64(&instance.Committed, highest)
+			if entry > 0 {
+				println("Entries: ", entry)
+				println("Size: ", len(instance.entries[:entry]))
+				println("Highest: ", highest)
+			}
+			if len(instance.states) > 0 {
+				println("FOUND SOME READ STATES")
+			}
+			instance.channel <- Ready{
+				HardState: pb.HardState{
+					Commit: highest,
+				},
+				ReadStates:       instance.states,
+				Entries:          instance.entries[:entry],
+				CommittedEntries: instance.entries[:entry],
+			}
+			instance.states = nil
+		}
+	}()
+	return instance
+}
+func RestartRabia(c *Config) Node {
+	_, config, _ := c.Storage.InitialState()
+	peers, err := config.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	println(string(peers))
+	//parse out peers somehow?
+	return StartRabia(c, []Peer{})
+}
+
 /*
 This method allows an ETCD node to propose a message it just received from a client.
 */
-var BLAHBLAH = 0
-
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
+	println("Propose called!")
 	var stamp = uint64(time.Now().UnixMilli())
 	var random = uint64(rand.Uint32())
 	return node.RabiaNode.Propose(ctx, random<<32|stamp, data)
