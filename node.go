@@ -662,17 +662,19 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 					instance.ProposeMutex.RLock()
 					data, present := instance.Messages[proposal]
 					instance.ProposeMutex.RUnlock()
-					if present && string(data.Data) != "will crash" {
+					if present {
 						instance.ProposeMutex.Lock()
 						delete(instance.Messages, proposal)
 						instance.ProposeMutex.Unlock()
-						instance.entries[entry] = pb.Entry{
-							Term:  0,
-							Index: i,
-							Data:  data.Data,
+						if string(data.Data) != "will crash" {
+							instance.entries[entry] = pb.Entry{
+								Term:  0,
+								Index: i,
+								Data:  data.Data,
+							}
+							data.Context.Done()
+							entry++
 						}
-						data.Context.Done()
-						entry++
 					}
 				}
 			}
