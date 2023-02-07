@@ -108,6 +108,7 @@ func (node *RabiaNode) Run(
 				var id = binary.LittleEndian.Uint64(header[0:])
 				var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
 				fill(data)
+				println("Got: ", string(data))
 				node.ProposeMutex.Lock()
 				node.Messages[id] = Message{Data: data, Context: context.Background()}
 				node.ProposeMutex.Unlock()
