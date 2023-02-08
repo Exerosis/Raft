@@ -759,7 +759,6 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
-	println("ReadIndex called")
 	var commit = atomic.LoadUint64(&node.Committed)
 	node.states = append(node.states, ReadState{commit - 1, rctx})
 	return nil
