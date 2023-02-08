@@ -139,10 +139,13 @@ func (node *RabiaNode) Run(
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
 				var next = queue.Poll()
 				if next == nil {
+					println("considering noop")
 					time.Sleep(50 * time.Nanosecond)
 					next = queue.Poll()
 					if next == nil {
 						next = uint64(math.MaxUint64)
+					} else {
+						println("Second time avoided noop")
 					}
 				}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
