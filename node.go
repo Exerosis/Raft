@@ -761,7 +761,7 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
 	println("ReadIndex called")
 	var commit = atomic.LoadUint64(&node.Committed)
-	node.states = append(node.states, ReadState{commit, rctx})
+	node.states = append(node.states, ReadState{commit - 1, rctx})
 	return nil
 }
 func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
