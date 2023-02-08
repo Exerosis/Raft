@@ -645,16 +645,11 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
-		err := instance.Run(address)
-		if err != nil {
-			panic(err)
+		reason := instance.Run(address)
+		if reason != nil {
+			panic(reason)
 		}
 	}()
-	//go func() {
-	//	for {
-	//
-	//	}
-	//}()
 	instance.channel <- Ready{}
 	return instance
 }
@@ -700,7 +695,6 @@ func (node *Rabia) Advance() {
 				instance.ProposeMutex.Lock()
 				delete(instance.Messages, proposal)
 				instance.ProposeMutex.Unlock()
-				println("Committing: ", proposal, " - ", len(data.Data))
 				instance.entries[entry] = pb.Entry{
 					Term:  0,
 					Index: i,
