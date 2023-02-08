@@ -147,6 +147,9 @@ func (node *RabiaNode) Run(
 				}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
+				if message != math.MaxUint64 {
+					fmt.Printf("[Pipe-%d] %d\n", index, message)
+				}
 				log.Logs[current%uint64(log.Size)] = message
 				var value = atomic.LoadInt64(&node.Highest)
 				for value < int64(current) && !atomic.CompareAndSwapInt64(&node.Highest, value, int64(current)) {
