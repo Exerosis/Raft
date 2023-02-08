@@ -639,7 +639,11 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		addresses[i] = url.Hostname()
 	}
 	fmt.Printf("Address: %s\n", address)
-	var node = rabia.MakeRabiaNode(addresses, 3000)
+	var pipes = make([]uint16, 2)
+	for i := range pipes {
+		pipes[i] = uint16(3000 + (i * 3))
+	}
+	var node = rabia.MakeRabiaNode(addresses, pipes...)
 	var instance = &Rabia{
 		RabiaNode: node,
 		channel:   make(chan Ready, 1),
@@ -697,7 +701,6 @@ func (node *Rabia) Advance() {
 			break
 		}
 		if proposal != math.MaxUint64 {
-			println("Got something real!")
 			instance.ProposeMutex.RLock()
 			data, present := instance.Messages[proposal]
 			instance.ProposeMutex.RUnlock()
