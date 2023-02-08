@@ -26,7 +26,7 @@ type RabiaNode struct {
 	Pipes        []uint16
 	Addresses    []string
 	Committed    uint64
-	Highest      uint64
+	Highest      int64
 	spreader     *rabia.TcpMulticaster
 }
 
@@ -42,7 +42,7 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	return &RabiaNode{
 		rabia.MakeLog(uint16(len(addresses)), size), queues,
 		make(map[uint64]Message), sync.RWMutex{},
-		pipes, addresses, uint64(0), uint64(0), nil,
+		pipes, addresses, uint64(0), int64(-1), nil,
 	}
 }
 
@@ -144,9 +144,9 @@ func (node *RabiaNode) Run(
 			}, func(slot uint16, message uint64) error {
 				info("Agreed: %d\n", message)
 				log.Logs[current%uint64(log.Size)] = message
-				var value = atomic.LoadUint64(&node.Highest)
-				for value < current && !atomic.CompareAndSwapUint64(&node.Highest, value, current) {
-					value = atomic.LoadUint64(&node.Highest)
+				var value = atomic.LoadInt64(&node.Highest)
+				for value < int64(current) && !atomic.CompareAndSwapInt64(&node.Highest, value, int64(current)) {
+					value = atomic.LoadInt64(&node.Highest)
 				}
 				current += uint64(len(node.Pipes))
 				return nil

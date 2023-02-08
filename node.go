@@ -654,8 +654,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		for {
 			time.Sleep(time.Millisecond)
 			var entry = 0
-			var highest = atomic.LoadUint64(&instance.Highest)
-			for i := instance.Committed + 1; i <= highest; i++ {
+			var highest = atomic.LoadInt64(&instance.Highest)
+			for i := instance.Committed; int64(i) <= highest; i++ {
 				var index = i % uint64(len(instance.Log.Logs))
 				var proposal = instance.Log.Logs[index]
 				if proposal != 0 {
@@ -677,7 +677,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 					}
 				}
 			}
-			atomic.StoreUint64(&instance.Committed, highest)
+			atomic.StoreUint64(&instance.Committed, uint64(highest+1))
 			if entry > 0 {
 				for _, it := range instance.entries[:entry] {
 					fmt.Printf("%d\n", it.Index)
@@ -692,7 +692,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			}
 			instance.channel <- Ready{
 				HardState: pb.HardState{
-					Commit: highest,
+					Commit: uint64(highest + 1),
 				},
 				ReadStates:       instance.states,
 				Entries:          instance.entries[:entry],
@@ -758,8 +758,8 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
 	println("ReadIndex called")
-	var highest = atomic.LoadUint64(&node.Highest)
-	node.states = append(node.states, ReadState{highest, rctx})
+	var commit = atomic.LoadUint64(&node.Committed)
+	node.states = append(node.states, ReadState{commit, rctx})
 	return nil
 }
 func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {
