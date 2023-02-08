@@ -49,7 +49,7 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 func (node *RabiaNode) Propose(
 	context context.Context, id uint64, data []byte,
 ) error {
-	println("Proposing out: ", string(data))
+	println("Send: ", len(data))
 	context.Done()
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header[0:], id)
@@ -108,7 +108,7 @@ func (node *RabiaNode) Run(
 				var id = binary.LittleEndian.Uint64(header[0:])
 				var data = make([]byte, binary.LittleEndian.Uint32(header[8:]))
 				fill(data)
-				println("Got: ", string(data))
+				println("Received: ", len(data))
 				node.ProposeMutex.Lock()
 				node.Messages[id] = Message{Data: data, Context: context.Background()}
 				node.ProposeMutex.Unlock()

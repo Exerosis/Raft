@@ -666,7 +666,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 						instance.ProposeMutex.Lock()
 						delete(instance.Messages, proposal)
 						instance.ProposeMutex.Unlock()
-						println("Pushing out: ", string(data.Data))
+						println("Committing: ", len(data.Data))
 						instance.entries[entry] = pb.Entry{
 							Term:  0,
 							Index: i,
