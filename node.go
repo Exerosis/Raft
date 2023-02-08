@@ -712,18 +712,6 @@ func (node *Rabia) Advance() {
 		}
 	}
 	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
-	if entry > 0 {
-		for _, it := range instance.entries[:entry] {
-			fmt.Printf("%d\n", it.Index)
-		}
-
-		//println("Entries: ", entry)
-		//println("Size: ", len(instance.entries[:entry]))
-		//println("Highest: ", highest)
-	}
-	if len(instance.states) > 0 {
-		println("FOUND SOME READ STATES")
-	}
 	instance.channel <- Ready{
 		HardState: pb.HardState{
 			Commit: uint64(highest + 1),
