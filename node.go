@@ -639,7 +639,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		addresses[i] = url.Hostname()
 	}
 	fmt.Printf("Address: %s\n", address)
-	var pipes = make([]uint16, 0)
+	var pipes = make([]uint16, 1)
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
