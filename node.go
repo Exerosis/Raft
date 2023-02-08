@@ -731,6 +731,7 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
+	println("Advance Called")
 }
 
 func (node *Rabia) Ready() <-chan Ready {
