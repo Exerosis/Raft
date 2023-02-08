@@ -679,7 +679,10 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			}
 			atomic.StoreUint64(&instance.Committed, highest)
 			if entry > 0 {
-				fmt.Printf("%s", instance.entries[:entry])
+				for _, it := range instance.entries[:entry] {
+					fmt.Printf("%d\n", it.Index)
+				}
+
 				//println("Entries: ", entry)
 				//println("Size: ", len(instance.entries[:entry]))
 				//println("Highest: ", highest)
