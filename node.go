@@ -641,7 +641,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
 		RabiaNode: node,
-		channel:   make(chan Ready),
+		channel:   make(chan Ready, 2),
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
@@ -650,57 +650,12 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			panic(err)
 		}
 	}()
-	go func() {
-		for {
-			time.Sleep(time.Millisecond)
-			var entry = 0
-			var highest = atomic.LoadInt64(&instance.Highest)
-			for i := instance.Committed; int64(i) <= highest; i++ {
-				var index = i % uint64(len(instance.Log.Logs))
-				var proposal = instance.Log.Logs[index]
-				if proposal != 0 {
-					instance.ProposeMutex.RLock()
-					data, present := instance.Messages[proposal]
-					instance.ProposeMutex.RUnlock()
-					if present {
-						instance.ProposeMutex.Lock()
-						delete(instance.Messages, proposal)
-						instance.ProposeMutex.Unlock()
-						println("Committing: ", proposal, " - ", len(data.Data))
-						instance.entries[entry] = pb.Entry{
-							Term:  0,
-							Index: i,
-							Data:  data.Data,
-						}
-						data.Context.Done()
-						entry++
-					}
-				}
-			}
-			atomic.StoreUint64(&instance.Committed, uint64(highest+1))
-			if entry > 0 {
-				for _, it := range instance.entries[:entry] {
-					fmt.Printf("%d\n", it.Index)
-				}
-
-				//println("Entries: ", entry)
-				//println("Size: ", len(instance.entries[:entry]))
-				//println("Highest: ", highest)
-			}
-			if len(instance.states) > 0 {
-				println("FOUND SOME READ STATES")
-			}
-			instance.channel <- Ready{
-				HardState: pb.HardState{
-					Commit: uint64(highest + 1),
-				},
-				ReadStates:       instance.states,
-				Entries:          instance.entries[:entry],
-				CommittedEntries: instance.entries[:entry],
-			}
-			instance.states = nil
-		}
-	}()
+	//go func() {
+	//	for {
+	//
+	//	}
+	//}()
+	instance.channel <- Ready{}
 	return instance
 }
 func RestartRabia(c *Config) Node {
@@ -731,7 +686,53 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
-	println("Advance Called")
+	var instance = node
+	var entry = 0
+	var highest = atomic.LoadInt64(&instance.Highest)
+	for i := instance.Committed; int64(i) <= highest; i++ {
+		var index = i % uint64(len(instance.Log.Logs))
+		var proposal = instance.Log.Logs[index]
+		if proposal != 0 {
+			instance.ProposeMutex.RLock()
+			data, present := instance.Messages[proposal]
+			instance.ProposeMutex.RUnlock()
+			if present {
+				instance.ProposeMutex.Lock()
+				delete(instance.Messages, proposal)
+				instance.ProposeMutex.Unlock()
+				println("Committing: ", proposal, " - ", len(data.Data))
+				instance.entries[entry] = pb.Entry{
+					Term:  0,
+					Index: i,
+					Data:  data.Data,
+				}
+				data.Context.Done()
+				entry++
+			}
+		}
+	}
+	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
+	if entry > 0 {
+		for _, it := range instance.entries[:entry] {
+			fmt.Printf("%d\n", it.Index)
+		}
+
+		//println("Entries: ", entry)
+		//println("Size: ", len(instance.entries[:entry]))
+		//println("Highest: ", highest)
+	}
+	if len(instance.states) > 0 {
+		println("FOUND SOME READ STATES")
+	}
+	instance.channel <- Ready{
+		HardState: pb.HardState{
+			Commit: uint64(highest + 1),
+		},
+		ReadStates:       instance.states,
+		Entries:          instance.entries[:entry],
+		CommittedEntries: instance.entries[:entry],
+	}
+	instance.states = nil
 }
 
 func (node *Rabia) Ready() <-chan Ready {
