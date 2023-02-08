@@ -147,7 +147,9 @@ func (node *RabiaNode) Run(
 					} else {
 						println("Second time avoided noop")
 					}
-				} else println("didn't noop")
+				} else {
+					println("didn't noop")
+				}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
 				//if message != math.MaxUint64 {
