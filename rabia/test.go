@@ -142,6 +142,7 @@ func (node *RabiaNode) Run(
 				var next = queue.Take().(uint64)
 				return uint16(current % uint64(log.Size)), next, nil
 			}, func(slot uint16, message uint64) error {
+				info("Agreed: %d\n", message)
 				log.Logs[current%uint64(log.Size)] = message
 				var value = atomic.LoadUint64(&node.Highest)
 				for value < current && !atomic.CompareAndSwapUint64(&node.Highest, value, current) {
