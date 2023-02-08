@@ -641,7 +641,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	var node = rabia.MakeRabiaNode(addresses, 3000)
 	var instance = &Rabia{
 		RabiaNode: node,
-		channel:   make(chan Ready, 2),
+		channel:   make(chan Ready, 1),
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
 	}
 	go func() {
