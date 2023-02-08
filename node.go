@@ -689,32 +689,31 @@ func (node *Rabia) Advance() {
 	var entry = 0
 	var highest = atomic.LoadInt64(&instance.Highest)
 	for i := instance.Committed; int64(i) <= highest; i++ {
-		println("Working at: ", i)
 		var slot = i % uint64(len(instance.Log.Logs))
 		var proposal = instance.Log.Logs[slot]
-		if proposal != 0 {
-			if proposal != math.MaxUint64 {
-				instance.ProposeMutex.RLock()
-				data, present := instance.Messages[proposal]
-				instance.ProposeMutex.RUnlock()
-				if present {
-					instance.ProposeMutex.Lock()
-					delete(instance.Messages, proposal)
-					instance.ProposeMutex.Unlock()
-					instance.entries[entry] = pb.Entry{
-						Term:  0,
-						Index: node.index,
-						Data:  data.Data,
-					}
-					data.Context.Done()
-					atomic.AddUint64(&node.index, 1)
-					entry++
-				}
-			}
-		} else {
+		if proposal == 0 {
+			println("change: ", i, " ", highest)
 			highest = int64(i)
 			//if we hit the first unfilled slot stop
 			break
+		}
+		if proposal != math.MaxUint64 {
+			instance.ProposeMutex.RLock()
+			data, present := instance.Messages[proposal]
+			instance.ProposeMutex.RUnlock()
+			if present {
+				instance.ProposeMutex.Lock()
+				delete(instance.Messages, proposal)
+				instance.ProposeMutex.Unlock()
+				instance.entries[entry] = pb.Entry{
+					Term:  0,
+					Index: node.index,
+					Data:  data.Data,
+				}
+				data.Context.Done()
+				atomic.AddUint64(&node.index, 1)
+				entry++
+			}
 		}
 	}
 	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
