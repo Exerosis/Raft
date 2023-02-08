@@ -692,12 +692,12 @@ func (node *Rabia) Advance() {
 		var slot = i % uint64(len(instance.Log.Logs))
 		var proposal = instance.Log.Logs[slot]
 		if proposal == 0 {
-			println("change: ", i, " ", highest)
 			highest = int64(i)
 			//if we hit the first unfilled slot stop
 			break
 		}
 		if proposal != math.MaxUint64 {
+			println("Got something real!")
 			instance.ProposeMutex.RLock()
 			data, present := instance.Messages[proposal]
 			instance.ProposeMutex.RUnlock()
