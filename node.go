@@ -705,7 +705,7 @@ func (node *Rabia) Advance() {
 			data, present := instance.Messages[proposal]
 			instance.ProposeMutex.RUnlock()
 			if present {
-				println("handling: ", string(data.Data))
+				//println("handling: ", string(data.Data))
 				instance.ProposeMutex.Lock()
 				delete(instance.Messages, proposal)
 				instance.ProposeMutex.Unlock()
