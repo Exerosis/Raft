@@ -142,7 +142,7 @@ func (node *RabiaNode) Run(
 					time.Sleep(50 * time.Nanosecond)
 					next = queue.Poll()
 					if next == nil {
-						next = math.MaxUint64
+						next = uint64(math.MaxUint64)
 					}
 				}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
