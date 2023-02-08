@@ -145,7 +145,7 @@ func (node *RabiaNode) Run(
 						next = uint64(math.MaxUint64)
 					}
 				}
-				if next != math.MaxUint64 {
+				if next != uint64(math.MaxUint64) {
 					println("Something real in the queue!")
 				}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
