@@ -689,6 +689,7 @@ func (node *Rabia) Advance() {
 	var entry = 0
 	var highest = atomic.LoadInt64(&instance.Highest)
 	for i := instance.Committed; int64(i) <= highest; i++ {
+		println("Working at: ", i)
 		var slot = i % uint64(len(instance.Log.Logs))
 		var proposal = instance.Log.Logs[slot]
 		if proposal != 0 {
