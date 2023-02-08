@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/exerosis/raft/rabia"
 	pb "github.com/exerosis/raft/raftpb"
+	"math"
 	"math/rand"
 	url2 "net/url"
 	"os"
@@ -609,7 +610,7 @@ func (n *node) ReadIndex(ctx context.Context, rctx []byte) error {
 type Rabia struct {
 	*rabia.RabiaNode
 	channel chan Ready
-	state   int
+	index   uint64
 	states  []ReadState
 	entries []pb.Entry
 }
@@ -668,9 +669,12 @@ func RestartRabia(c *Config) Node {
 This method allows an ETCD node to propose a message it just received from a client.
 */
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
-	var stamp = uint64(time.Now().UnixMilli())
-	var random = uint64(rand.Uint32())
-	return node.RabiaNode.Propose(ctx, random<<32|stamp, data)
+	var id uint64
+	for id == 0 || id >= math.MaxUint64-1 {
+		var stamp = uint64(time.Now().UnixMilli())
+		id = uint64(rand.Uint32())<<32 | stamp
+	}
+	return node.RabiaNode.Propose(ctx, id, data)
 }
 
 /*
@@ -685,24 +689,31 @@ func (node *Rabia) Advance() {
 	var entry = 0
 	var highest = atomic.LoadInt64(&instance.Highest)
 	for i := instance.Committed; int64(i) <= highest; i++ {
-		var index = i % uint64(len(instance.Log.Logs))
-		var proposal = instance.Log.Logs[index]
+		var slot = i % uint64(len(instance.Log.Logs))
+		var proposal = instance.Log.Logs[slot]
 		if proposal != 0 {
-			instance.ProposeMutex.RLock()
-			data, present := instance.Messages[proposal]
-			instance.ProposeMutex.RUnlock()
-			if present {
-				instance.ProposeMutex.Lock()
-				delete(instance.Messages, proposal)
-				instance.ProposeMutex.Unlock()
-				instance.entries[entry] = pb.Entry{
-					Term:  0,
-					Index: i,
-					Data:  data.Data,
+			if proposal != math.MaxUint64 {
+				instance.ProposeMutex.RLock()
+				data, present := instance.Messages[proposal]
+				instance.ProposeMutex.RUnlock()
+				if present {
+					instance.ProposeMutex.Lock()
+					delete(instance.Messages, proposal)
+					instance.ProposeMutex.Unlock()
+					instance.entries[entry] = pb.Entry{
+						Term:  0,
+						Index: node.index,
+						Data:  data.Data,
+					}
+					data.Context.Done()
+					atomic.AddUint64(&node.index, 1)
+					entry++
 				}
-				data.Context.Done()
-				entry++
 			}
+		} else {
+			highest = int64(i)
+			//if we hit the first unfilled slot stop
+			break
 		}
 	}
 	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
@@ -741,8 +752,8 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
-	var commit = atomic.LoadUint64(&node.Committed)
-	node.states = append(node.states, ReadState{commit - 1, rctx})
+	var index = atomic.LoadUint64(&node.index)
+	node.states = append(node.states, ReadState{index, rctx})
 	return nil
 }
 func (node *Rabia) TransferLeadership(ctx context.Context, lead, transferee uint64) {

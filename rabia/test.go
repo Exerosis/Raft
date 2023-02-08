@@ -7,6 +7,7 @@ import (
 	"github.com/better-concurrent/guc"
 	"github.com/exerosis/RabiaGo/rabia"
 	"go.uber.org/multierr"
+	"math"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -136,16 +137,23 @@ func (node *RabiaNode) Run(
 			}
 			info("Connected!\n")
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				var next = queue.Take().(uint64)
-				return uint16(current % uint64(log.Size)), next, nil
+				var next = queue.Poll()
+				if next == nil {
+					time.Sleep(50 * time.Nanosecond)
+					next = queue.Poll()
+					if next == nil {
+						next = math.MaxUint64
+					}
+				}
+				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
-				info("Agreed: %d\n", message)
 				log.Logs[current%uint64(log.Size)] = message
 				var value = atomic.LoadInt64(&node.Highest)
 				for value < int64(current) && !atomic.CompareAndSwapInt64(&node.Highest, value, int64(current)) {
 					value = atomic.LoadInt64(&node.Highest)
 				}
 				current += uint64(len(node.Pipes))
+				log.Logs[current%uint64(log.Size)] = 0
 				return nil
 			}, info)
 			if reason != nil {
