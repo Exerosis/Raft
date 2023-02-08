@@ -655,7 +655,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			time.Sleep(time.Millisecond)
 			var entry = 0
 			var highest = atomic.LoadUint64(&instance.Highest)
-			for i := instance.Committed; i < highest; i++ {
+			for i := instance.Committed + 1; i < highest; i++ {
 				var index = i % uint64(len(instance.Log.Logs))
 				var proposal = instance.Log.Logs[index]
 				if proposal != 0 {
