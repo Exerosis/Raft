@@ -678,7 +678,6 @@ func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 		var stamp = uint64(time.Now().UnixMilli())
 		id = uint64(rand.Uint32())<<32 | stamp
 	}
-	println("Proposed: ", string(data))
 	return node.RabiaNode.Propose(ctx, id, data)
 }
 

@@ -65,6 +65,7 @@ func (node *RabiaNode) Propose(
 	node.Messages[id] = Message{Data: data, Context: context}
 	node.ProposeMutex.Unlock()
 	node.Queues[id>>32%uint64(len(node.Queues))].Offer(id)
+	println("Queue: ", node.Queues[id>>32%uint64(len(node.Queues))].Size())
 	return nil
 }
 
