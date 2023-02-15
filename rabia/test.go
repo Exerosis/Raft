@@ -58,10 +58,12 @@ func (node *RabiaNode) Propose(
 	for node.spreader == nil {
 		time.Sleep(time.Millisecond)
 	}
-	reason := node.spreader.Send(send)
-	if reason != nil {
-		return reason
-	}
+	go func() {
+		reason := node.spreader.Send(send)
+		if reason != nil {
+			panic(reason)
+		}
+	}()
 	node.Messages[id] = Message{Data: data, Context: context}
 	node.ProposeMutex.Unlock()
 	node.Queues[id>>32%uint64(len(node.Queues))].Offer(id)
