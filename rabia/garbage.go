@@ -27,14 +27,14 @@ func comparingUint64(o1, o2 any) int {
 
 func comparingProposals(o1, o2 any) int {
 	var first = comparingUint64(
-		o1.(uint64)&0xFFFFFFFF,
-		o2.(uint64)&0xFFFFFFFF,
+		o1.(identifier).value&0xFFFFFFFF,
+		o2.(identifier).value&0xFFFFFFFF,
 	)
 	if first != 0 {
 		return first
 	}
 	return comparingUint64(
-		o1.(uint64)>>32,
-		o2.(uint64)>>32,
+		o1.(identifier).value>>32,
+		o2.(identifier).value>>32,
 	)
 }
