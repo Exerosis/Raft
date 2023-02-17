@@ -253,8 +253,8 @@ func setupNode(c *Config, peers []Peer) *node {
 //
 // Peers must not be zero length; call RestartNode in that case.
 func StartNode(c *Config, peers []Peer) Node {
-	return StartRaft(c, peers)
-	//return StartRabia(c, peers)
+	//return StartRaft(c, peers)
+	return StartRabia(c, peers)
 }
 func RestartNode(c *Config) Node {
 	return RestartRaft(c)
