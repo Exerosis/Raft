@@ -725,7 +725,7 @@ func (node *Rabia) Advance() {
 	}
 	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
 	instance.channel <- Ready{
-		SoftState: SOFT_STATE,
+		//SoftState: SOFT_STATE,
 		HardState: pb.HardState{
 			Commit: uint64(highest + 1),
 		},
