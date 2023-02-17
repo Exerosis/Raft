@@ -26,6 +26,7 @@ import (
 	url2 "net/url"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -613,6 +614,9 @@ type Rabia struct {
 	index   uint64
 	states  []ReadState
 	entries []pb.Entry
+
+	lock   sync.Mutex
+	starts map[uint64]time.Time
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
@@ -678,6 +682,9 @@ func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 		var stamp = uint64(time.Now().UnixMilli())
 		id = uint64(rand.Uint32())<<32 | stamp
 	}
+	node.lock.Lock()
+	node.starts[id] = time.Now()
+	node.lock.Unlock()
 	return node.RabiaNode.Propose(ctx, id, data)
 }
 
@@ -705,6 +712,13 @@ func (node *Rabia) Advance() {
 			break
 		}
 		if proposal != math.MaxUint64 {
+			node.lock.Lock()
+			it, there := node.starts[proposal]
+			if there {
+				println("Took: ", time.Since(it).String())
+				delete(node.starts, proposal)
+			}
+			node.lock.Unlock()
 			instance.ProposeMutex.RLock()
 			data, present := instance.Messages[proposal]
 			instance.ProposeMutex.RUnlock()
