@@ -162,7 +162,7 @@ func (node *RabiaNode) Run(
 						queue.Offer(message)
 						return nil
 					} else {
-						if queue.Remove(message) {
+						if queue.Remove(identifier{message}) {
 							println("Removed one!")
 						}
 					}

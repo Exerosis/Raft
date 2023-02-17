@@ -4,6 +4,14 @@ type comparator struct {
 	compare func(o1, o2 any) int
 }
 
+type identifier struct {
+	value uint64
+}
+
+func (id identifier) Equals(other any) bool {
+	return other.(uint64) == id.value
+}
+
 func (comparator *comparator) Compare(o1, o2 any) int {
 	return comparator.compare(o1, o2)
 }
