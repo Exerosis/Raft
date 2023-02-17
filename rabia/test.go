@@ -163,6 +163,7 @@ func (node *RabiaNode) Run(
 				//	//println("didn't noop")
 				//}
 				last = next.(identifier).value
+				println("Proposing: ", last)
 				return uint16(current % uint64(log.Size)), last, nil
 			}, func(slot uint16, message uint64) error {
 				if message == math.MaxUint64 {
