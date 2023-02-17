@@ -687,6 +687,17 @@ func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	node.lock.Lock()
 	node.starts[id] = time.Now()
 	node.lock.Unlock()
+	go func() {
+		select {
+		case <-ctx.Done():
+			node.lock.Lock()
+			_, there := node.starts[id]
+			if there {
+				println("Timed out: ", id)
+			}
+			node.lock.Unlock()
+		}
+	}()
 	return node.RabiaNode.Propose(ctx, id, data)
 }
 

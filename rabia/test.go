@@ -156,15 +156,14 @@ func (node *RabiaNode) Run(
 				last = next.(identifier).value
 				return uint16(current % uint64(log.Size)), last, nil
 			}, func(slot uint16, message uint64) error {
+				if message == math.MaxUint64 {
+					println("Skipped: ", last)
+					queue.Offer(identifier{message})
+					return nil
+				}
 				if message != last {
-					if message == math.MaxUint64 {
-						println("Skipped: ", last)
-						queue.Offer(identifier{message})
-						return nil
-					} else {
-						if queue.Remove(identifier{message}) {
-							println("Removed one!")
-						}
+					if queue.Remove(identifier{message}) {
+						panic("Removed one!")
 					}
 				}
 				//if message != math.MaxUint64 {
