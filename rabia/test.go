@@ -138,14 +138,17 @@ func (node *RabiaNode) Run(
 				reasons = multierr.Append(reasons, result)
 			}
 			info("Connected!\n")
+			var three = 0
 			var last uint64
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				time.Sleep(60 * time.Second)
-				println("Entries: ")
-				for !queue.IsEmpty() {
-					println(queue.Poll())
+				if three > 3 {
+					time.Sleep(60 * time.Second)
+					println("Entries: ")
+					for !queue.IsEmpty() {
+						println(queue.Poll().(identifier).value)
+					}
+					time.Sleep(60 * time.Hour)
 				}
-				time.Sleep(60 * time.Hour)
 				var next = queue.Take()
 				//if next == nil {
 				//	//println("considering noop ", queue.Size())
