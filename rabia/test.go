@@ -142,9 +142,10 @@ func (node *RabiaNode) Run(
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
 				time.Sleep(60 * time.Second)
 				println("Entries: ")
-				queue.ForEach(func(it interface{}) {
-					println(it.(identifier).value)
-				})
+				for !queue.IsEmpty() {
+					println(queue.Poll())
+				}
+				time.Sleep(60 * time.Hour)
 				var next = queue.Take()
 				//if next == nil {
 				//	//println("considering noop ", queue.Size())
