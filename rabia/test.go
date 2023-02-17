@@ -141,14 +141,14 @@ func (node *RabiaNode) Run(
 			var three = 0
 			var last uint64
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				if three == 4 {
-					time.Sleep(60 * time.Second)
-					println("Entries: ")
-					for !queue.IsEmpty() {
-						println(queue.Poll().(identifier).value)
-					}
-				}
-				three++
+				//if three == 4 {
+				//	time.Sleep(60 * time.Second)
+				//	println("Entries: ")
+				//	for !queue.IsEmpty() {
+				//		println(queue.Poll().(identifier).value)
+				//	}
+				//}
+				//three++
 				var next = queue.Take()
 				//if next == nil {
 				//	//println("considering noop ", queue.Size())
