@@ -9,7 +9,7 @@ type identifier struct {
 }
 
 func (id identifier) Equals(other any) bool {
-	return other.(uint64) == id.value
+	return other.(identifier).value == id.value
 }
 
 func (comparator *comparator) Compare(o1, o2 any) int {

@@ -66,7 +66,7 @@ func (node *RabiaNode) Propose(
 	}()
 	node.Messages[id] = Message{Data: data, Context: context}
 	node.ProposeMutex.Unlock()
-	node.Queues[id>>32%uint64(len(node.Queues))].Offer(id)
+	node.Queues[id>>32%uint64(len(node.Queues))].Offer(identifier{id})
 	println("Queue: ", node.Queues[id>>32%uint64(len(node.Queues))].Size())
 	return nil
 }
@@ -153,13 +153,13 @@ func (node *RabiaNode) Run(
 				//} else {
 				//	//println("didn't noop")
 				//}
-				last = next.(uint64)
+				last = next.(identifier).value
 				return uint16(current % uint64(log.Size)), last, nil
 			}, func(slot uint16, message uint64) error {
 				if message != last {
 					if message == math.MaxUint64 {
 						println("Skipped: ", last)
-						queue.Offer(message)
+						queue.Offer(identifier{message})
 						return nil
 					} else {
 						if queue.Remove(identifier{message}) {
