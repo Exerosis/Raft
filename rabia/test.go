@@ -155,6 +155,7 @@ func (node *RabiaNode) Run(
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
 				if message == math.MaxUint64 {
+					println("Skipped one!")
 					queue.Offer(message)
 					return nil
 				}
