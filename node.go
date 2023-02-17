@@ -652,6 +652,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		RabiaNode: node,
 		channel:   make(chan Ready, 1),
 		entries:   make([]pb.Entry, len(node.Log.Logs)),
+
+		starts: make(map[uint64]time.Time),
 	}
 	go func() {
 		reason := instance.Run(address)
