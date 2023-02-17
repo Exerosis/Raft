@@ -7,7 +7,6 @@ import (
 	"github.com/better-concurrent/guc"
 	"github.com/exerosis/RabiaGo/rabia"
 	"go.uber.org/multierr"
-	"math"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -142,19 +141,19 @@ func (node *RabiaNode) Run(
 			}
 			info("Connected!\n")
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				var next = queue.Poll()
-				if next == nil {
-					//println("considering noop ", queue.Size())
-					time.Sleep(50 * time.Nanosecond)
-					next = queue.Poll()
-					if next == nil {
-						next = uint64(math.MaxUint64)
-					} else {
-						println("Second time avoided noop")
-					}
-				} else {
-					//println("didn't noop")
-				}
+				var next = queue.Take()
+				//if next == nil {
+				//	//println("considering noop ", queue.Size())
+				//	time.Sleep(50 * time.Nanosecond)
+				//	next = queue.Poll()
+				//	if next == nil {
+				//		next = uint64(math.MaxUint64)
+				//	} else {
+				//		println("Second time avoided noop")
+				//	}
+				//} else {
+				//	//println("didn't noop")
+				//}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
 				//if message != math.MaxUint64 {
