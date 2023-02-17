@@ -688,6 +688,10 @@ entries as we can and send them to ETCD. This will bump forward the committed
 counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
+var SOFT_STATE = &SoftState{
+	RaftState: 2,
+}
+
 func (node *Rabia) Advance() {
 	var instance = node
 	var entry = 0
@@ -721,6 +725,7 @@ func (node *Rabia) Advance() {
 	}
 	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
 	instance.channel <- Ready{
+		SoftState: SOFT_STATE,
 		HardState: pb.HardState{
 			Commit: uint64(highest + 1),
 		},
