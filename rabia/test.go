@@ -112,7 +112,7 @@ func (node *RabiaNode) Run(
 				node.ProposeMutex.Lock()
 				node.Messages[id] = Message{Data: data, Context: context.Background()}
 				node.ProposeMutex.Unlock()
-				node.Queues[id>>32%uint64(len(node.Queues))].Offer(id)
+				node.Queues[id>>32%uint64(len(node.Queues))].Offer(identifier{id})
 			}
 		}(inbound)
 	}
