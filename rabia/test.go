@@ -7,6 +7,7 @@ import (
 	"github.com/better-concurrent/guc"
 	"github.com/exerosis/RabiaGo/rabia"
 	"go.uber.org/multierr"
+	"math"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -153,6 +154,10 @@ func (node *RabiaNode) Run(
 				//}
 				return uint16(current % uint64(log.Size)), next.(uint64), nil
 			}, func(slot uint16, message uint64) error {
+				if message == math.MaxUint64 {
+					queue.Offer(message)
+					return nil
+				}
 				//if message != math.MaxUint64 {
 				//	fmt.Printf("[Pipe-%d] %d\n", index, message)
 				//}
