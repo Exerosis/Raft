@@ -31,7 +31,7 @@ type RabiaNode struct {
 	spreader     *rabia.TcpMulticaster
 }
 
-const INFO = false
+const INFO = true
 
 func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	var compare = &comparator{comparingProposals}
