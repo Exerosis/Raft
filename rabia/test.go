@@ -63,12 +63,9 @@ func (node *RabiaNode) Propose(
 			panic(reason)
 		}
 	}()
-	var now = time.Now()
 	node.Messages[id] = Message{Data: data, Context: context}
 	node.ProposeMutex.Unlock()
 	node.Queues[id>>32%uint64(len(node.Queues))].Offer(id)
-	var elapsed = time.Since(now)
-	println("Took: ", elapsed.String())
 	println("Queue: ", node.Queues[id>>32%uint64(len(node.Queues))].Size())
 	return nil
 }
