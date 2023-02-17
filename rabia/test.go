@@ -149,6 +149,7 @@ func (node *RabiaNode) Run(
 					}
 					time.Sleep(60 * time.Hour)
 				}
+				three++
 				var next = queue.Take()
 				//if next == nil {
 				//	//println("considering noop ", queue.Size())
