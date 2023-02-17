@@ -715,7 +715,7 @@ func (node *Rabia) Advance() {
 				instance.ProposeMutex.Unlock()
 				instance.entries[entry] = pb.Entry{
 					Term:  0,
-					Index: node.index,
+					Index: atomic.LoadUint64(&node.index),
 					Data:  data.Data,
 				}
 				atomic.AddUint64(&node.index, 1)
