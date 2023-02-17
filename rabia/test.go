@@ -141,13 +141,12 @@ func (node *RabiaNode) Run(
 			var three = 0
 			var last uint64
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
-				if three > 3 {
+				if three == 3 {
 					time.Sleep(60 * time.Second)
 					println("Entries: ")
 					for !queue.IsEmpty() {
 						println(queue.Poll().(identifier).value)
 					}
-					time.Sleep(60 * time.Hour)
 				}
 				three++
 				var next = queue.Take()
