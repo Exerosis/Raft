@@ -138,6 +138,7 @@ func (node *RabiaNode) Run(
 				reasons = multierr.Append(reasons, result)
 			}
 			info("Connected!\n")
+			var last uint64
 			reason = log.SMR(proposals, states, votes, func() (uint16, uint64, error) {
 				var next = queue.Take()
 				//if next == nil {
@@ -152,12 +153,19 @@ func (node *RabiaNode) Run(
 				//} else {
 				//	//println("didn't noop")
 				//}
-				return uint16(current % uint64(log.Size)), next.(uint64), nil
+				last = next.(uint64)
+				return uint16(current % uint64(log.Size)), last, nil
 			}, func(slot uint16, message uint64) error {
-				if message == math.MaxUint64 {
-					println("Skipped one!")
-					queue.Offer(message)
-					return nil
+				if message != last {
+					if message == math.MaxUint64 {
+						println("Skipped: ", last)
+						queue.Offer(message)
+						return nil
+					} else {
+						if queue.Remove(message) {
+							println("Removed one!")
+						}
+					}
 				}
 				//if message != math.MaxUint64 {
 				//	fmt.Printf("[Pipe-%d] %d\n", index, message)
