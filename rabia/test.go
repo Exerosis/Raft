@@ -186,6 +186,10 @@ func (node *RabiaNode) Run(
 					value = atomic.LoadInt64(&node.Highest)
 				}
 				current += uint64(len(node.Pipes))
+				var committed = atomic.LoadUint64(&node.Committed)
+				if current-committed >= uint64(log.Size) {
+					panic("WRAPPED TOO HARD!")
+				}
 				log.Logs[current%uint64(log.Size)] = 0
 				return nil
 			}, info)
