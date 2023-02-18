@@ -29,9 +29,10 @@ type RabiaNode struct {
 	Committed    uint64
 	Highest      int64
 	spreader     *rabia.TcpMulticaster
+	spreadLock   sync.Mutex
 }
 
-const INFO = false
+const INFO = true
 
 func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	var compare = &comparator{comparingProposals}
@@ -43,7 +44,8 @@ func MakeRabiaNode(addresses []string, pipes ...uint16) *RabiaNode {
 	return &RabiaNode{
 		rabia.MakeLog(uint16(len(addresses)), size), queues,
 		make(map[uint64]Message), sync.RWMutex{},
-		pipes, addresses, uint64(0), int64(-1), nil,
+		pipes, addresses, uint64(0),
+		int64(-1), nil, sync.Mutex{},
 	}
 }
 
@@ -53,20 +55,22 @@ func (node *RabiaNode) Propose(
 	header := make([]byte, 12)
 	binary.LittleEndian.PutUint64(header[0:], id)
 	binary.LittleEndian.PutUint32(header[8:], uint32(len(data)))
-	node.ProposeMutex.Lock()
 	var send = append(header, data...)
 	for node.spreader == nil {
 		time.Sleep(time.Millisecond)
 	}
 	go func() {
+		node.spreadLock.Lock()
+		defer node.spreadLock.Unlock()
 		reason := node.spreader.Send(send)
 		if reason != nil {
 			panic(reason)
 		}
+		node.ProposeMutex.Lock()
+		node.Messages[id] = Message{Data: data, Context: context}
+		node.ProposeMutex.Unlock()
+		node.Queues[id>>32%uint64(len(node.Queues))].Offer(identifier{id})
 	}()
-	node.Messages[id] = Message{Data: data, Context: context}
-	node.ProposeMutex.Unlock()
-	node.Queues[id>>32%uint64(len(node.Queues))].Offer(identifier{id})
 	return nil
 }
 
