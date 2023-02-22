@@ -718,6 +718,7 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
+	println("Advance on: ", rabia.GoroutineId())
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
@@ -725,7 +726,7 @@ func (node *Rabia) Advance() {
 		node.lock.Lock()
 		it, there := node.starts[id]
 		if there {
-			println("Took: ", time.Since(it).String())
+			fmt.Printf("%d took: %s\n", id, time.Since(it).String())
 			delete(node.starts, id)
 		}
 		node.lock.Unlock()
