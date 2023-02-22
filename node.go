@@ -648,8 +648,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
-	var node = rabia.MakeNode(addresses, pipes...)
-	//var node = MakeTestNode(addresses, pipes...)
+	//var node = rabia.MakeNode(addresses, pipes...)
+	var node = MakeTestNode(addresses, pipes...)
 	var instance = &Rabia{
 		Node:    node,
 		channel: make(chan Ready, 1),
@@ -661,14 +661,6 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		reason := instance.Run(address)
 		if reason != nil {
 			panic(reason)
-		}
-	}()
-	go func() {
-		for {
-			instance.lock.Lock()
-			println("In progress: ", len(instance.starts))
-			instance.lock.Unlock()
-			time.Sleep(500 * time.Millisecond)
 		}
 	}()
 	instance.channel <- Ready{}
