@@ -701,8 +701,9 @@ func (node *Rabia) Advance() {
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
+	var entries = make([]pb.Entry, entry)
 	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
-		instance.entries[entry] = pb.Entry{
+		entries[entry] = pb.Entry{
 			Term:  0,
 			Index: atomic.LoadUint64(&node.index),
 			Data:  data,
@@ -715,7 +716,6 @@ func (node *Rabia) Advance() {
 	if reason != nil {
 		panic(reason)
 	}
-	var entries = make([]pb.Entry, entry)
 	instance.channel <- Ready{
 		//SoftState: SOFT_STATE,
 		HardState: pb.HardState{
