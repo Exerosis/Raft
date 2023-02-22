@@ -26,7 +26,6 @@ import (
 	url2 "net/url"
 	"os"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -614,10 +613,6 @@ type Rabia struct {
 	index   uint64
 	states  []ReadState
 	entries []pb.Entry
-
-	lock        sync.Mutex
-	advanceLock sync.Mutex
-	starts      map[uint64]time.Time
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
@@ -654,8 +649,6 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		Node:    node,
 		channel: make(chan Ready, 1),
 		entries: make([]pb.Entry, node.Size()),
-
-		starts: make(map[uint64]time.Time),
 	}
 	go func() {
 		reason := instance.Run(address)
@@ -681,26 +674,11 @@ func RestartRabia(c *Config) Node {
 This method allows an ETCD node to propose a message it just received from a client.
 */
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
-	println("Propose on: ", rabia.GoroutineId())
 	var id uint64
 	for id == 0 || id >= math.MaxUint64-1 {
 		var stamp = uint64(time.Now().UnixMilli())
 		id = uint64(rand.Uint32())<<32 | stamp
 	}
-	node.lock.Lock()
-	node.starts[id] = time.Now()
-	node.lock.Unlock()
-	go func() {
-		select {
-		case <-ctx.Done():
-			node.lock.Lock()
-			_, there := node.starts[id]
-			if there {
-				println("Timed out: ", id)
-			}
-			node.lock.Unlock()
-		}
-	}()
 	return node.Node.Propose(id, data)
 }
 
@@ -720,19 +698,10 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
-	node.advanceLock.Lock()
-	defer node.advanceLock.Unlock()
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
 	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
-		node.lock.Lock()
-		it, there := node.starts[id]
-		if there {
-			fmt.Printf("%d took: %s\n", id, time.Since(it).String())
-			delete(node.starts, id)
-		}
-		node.lock.Unlock()
 		instance.entries[entry] = pb.Entry{
 			Term:  0,
 			Index: atomic.LoadUint64(&node.index),
@@ -747,7 +716,6 @@ func (node *Rabia) Advance() {
 		panic(reason)
 	}
 	var entries = make([]pb.Entry, entry)
-	copy(entries, instance.entries[:entry])
 	instance.channel <- Ready{
 		//SoftState: SOFT_STATE,
 		HardState: pb.HardState{
@@ -784,6 +752,7 @@ func (node *Rabia) ApplyConfChange(cc pb.ConfChangeI) *pb.ConfState {
 	panic("ApplyConfChange called")
 }
 func (node *Rabia) ReadIndex(ctx context.Context, rctx []byte) error {
+	//TODO this is not exactly very safe lol
 	var index = atomic.LoadUint64(&node.index)
 	node.states = append(node.states, ReadState{index, rctx})
 	return nil
