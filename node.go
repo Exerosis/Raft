@@ -718,7 +718,6 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
-	println("Advance on: ", rabia.GoroutineId())
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
