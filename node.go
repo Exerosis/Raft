@@ -647,8 +647,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
-	//var node = rabia.MakeNode(addresses, pipes...)
-	var node = MakeTestNode(addresses, pipes...)
+	var node = rabia.MakeNode(addresses, pipes...)
+	//var node = MakeTestNode(addresses, pipes...)
 	var instance = &Rabia{
 		Node:    node,
 		channel: make(chan Ready, 1),
@@ -723,11 +723,11 @@ func (node *Rabia) Advance() {
 	var highest = uint64(0)
 	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
 		node.lock.Lock()
-		//it, there := node.starts[id]
-		//if there {
-		//	fmt.Printf("%d took: %s\n", id, time.Since(it).String())
-		//	delete(node.starts, id)
-		//}
+		it, there := node.starts[id]
+		if there {
+			fmt.Printf("%d took: %s\n", id, time.Since(it).String())
+			delete(node.starts, id)
+		}
 		node.lock.Unlock()
 		instance.entries[entry] = pb.Entry{
 			Term:  0,
