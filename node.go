@@ -746,7 +746,7 @@ func (node *Rabia) Advance() {
 	if reason != nil {
 		panic(reason)
 	}
-	var entries = make([]pb.Entry, entry-1)
+	var entries = make([]pb.Entry, entry)
 	copy(entries, instance.entries[:entry])
 	instance.channel <- Ready{
 		//SoftState: SOFT_STATE,
