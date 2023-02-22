@@ -746,14 +746,16 @@ func (node *Rabia) Advance() {
 	if reason != nil {
 		panic(reason)
 	}
+	var entries = make([]pb.Entry, entry-1)
+	copy(entries, instance.entries[:entry])
 	instance.channel <- Ready{
 		//SoftState: SOFT_STATE,
 		HardState: pb.HardState{
 			Commit: highest + 1,
 		},
-		ReadStates:       instance.states,
-		Entries:          instance.entries[:entry],
-		CommittedEntries: instance.entries[:entry],
+		ReadStates: instance.states,
+		//Entries:          entries,
+		CommittedEntries: entries,
 	}
 	instance.states = nil
 }
