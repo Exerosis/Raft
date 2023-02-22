@@ -615,8 +615,9 @@ type Rabia struct {
 	states  []ReadState
 	entries []pb.Entry
 
-	lock   sync.Mutex
-	starts map[uint64]time.Time
+	lock        sync.Mutex
+	advanceLock sync.Mutex
+	starts      map[uint64]time.Time
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
@@ -718,6 +719,8 @@ counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
 func (node *Rabia) Advance() {
+	node.advanceLock.Lock()
+	defer node.advanceLock.Unlock()
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
