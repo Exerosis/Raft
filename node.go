@@ -681,6 +681,7 @@ func RestartRabia(c *Config) Node {
 This method allows an ETCD node to propose a message it just received from a client.
 */
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
+	println("Propose on: ", rabia.GoroutineId())
 	var id uint64
 	for id == 0 || id >= math.MaxUint64-1 {
 		var stamp = uint64(time.Now().UnixMilli())
