@@ -663,6 +663,14 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 			panic(reason)
 		}
 	}()
+	go func() {
+		for {
+			instance.lock.Lock()
+			println("In progress: ", len(instance.starts))
+			instance.lock.Unlock()
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
 	instance.channel <- Ready{}
 	return instance
 }
