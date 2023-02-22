@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/exerosis/RabiaGo/rabia"
 	pb "github.com/exerosis/raft/raftpb"
-	"math"
 	"math/rand"
 	url2 "net/url"
 	"os"
@@ -675,7 +674,7 @@ This method allows an ETCD node to propose a message it just received from a cli
 */
 func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 	var id uint64
-	for id == 0 || id >= math.MaxUint64-1 {
+	for !rabia.IsValid(id) {
 		var stamp = uint64(time.Now().UnixMilli())
 		id = uint64(rand.Uint32())<<32 | stamp
 	}
