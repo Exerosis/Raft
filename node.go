@@ -615,6 +615,7 @@ type Rabia struct {
 }
 
 func StartRabia(config *Config, peers []Peer) *Rabia {
+	println("Storage Writes: ", config.AsyncStorageWrites)
 	name, reason := os.Hostname()
 	if reason != nil {
 		panic(reason)
