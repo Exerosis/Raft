@@ -723,11 +723,11 @@ func (node *Rabia) Advance() {
 	var highest = uint64(0)
 	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
 		node.lock.Lock()
-		it, there := node.starts[id]
-		if there {
-			fmt.Printf("%d took: %s\n", id, time.Since(it).String())
-			delete(node.starts, id)
-		}
+		//it, there := node.starts[id]
+		//if there {
+		//	fmt.Printf("%d took: %s\n", id, time.Since(it).String())
+		//	delete(node.starts, id)
+		//}
 		node.lock.Unlock()
 		instance.entries[entry] = pb.Entry{
 			Term:  0,
