@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/exerosis/raft/rabia"
+	"github.com/exerosis/RabiaGo/rabia"
 	pb "github.com/exerosis/raft/raftpb"
 	"math"
 	"math/rand"
@@ -609,7 +609,7 @@ func (n *node) ReadIndex(ctx context.Context, rctx []byte) error {
  */
 
 type Rabia struct {
-	*rabia.RabiaNode
+	rabia.Node
 	channel chan Ready
 	index   uint64
 	states  []ReadState
@@ -647,11 +647,12 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
-	var node = rabia.MakeRabiaNode(addresses, pipes...)
+	var node = rabia.MakeNode(addresses, pipes...)
+	//var node = MakeTestNode(addresses, pipes...)
 	var instance = &Rabia{
-		RabiaNode: node,
-		channel:   make(chan Ready, 1),
-		entries:   make([]pb.Entry, len(node.Log.Logs)),
+		Node:    node,
+		channel: make(chan Ready, 1),
+		entries: make([]pb.Entry, node.Size()),
 
 		starts: make(map[uint64]time.Time),
 	}
@@ -698,8 +699,16 @@ func (node *Rabia) Propose(ctx context.Context, data []byte) error {
 			node.lock.Unlock()
 		}
 	}()
-	return node.RabiaNode.Propose(ctx, id, data)
+	return node.Node.Propose(id, data)
 }
+
+//func (node *Rabia) Fake(ctx context.Context, data []byte) {
+//
+//	var value = atomic.LoadInt64(&node.Highest)
+//	for value < int64(current) && !atomic.CompareAndSwapInt64(&node.Highest, value, int64(current)) {
+//		value = atomic.LoadInt64(&node.Highest)
+//	}
+//}
 
 /*
 This method indicates that ETCD is ready to process another batch of actions.
@@ -708,53 +717,35 @@ entries as we can and send them to ETCD. This will bump forward the committed
 counter which will allow rabia to continue processing if there was no space
 left in the ring buffer.
 */
-var SOFT_STATE = &SoftState{
-	RaftState: 2,
-}
-
 func (node *Rabia) Advance() {
 	var instance = node
 	var entry = 0
-	var highest = atomic.LoadInt64(&instance.Highest)
-	for i := instance.Committed; int64(i) <= highest; i++ {
-		var slot = i % uint64(len(instance.Log.Logs))
-		var proposal = instance.Log.Logs[slot]
-		if proposal == 0 {
-			highest = int64(i)
-			//if we hit the first unfilled slot stop
-			break
+	var highest = uint64(0)
+	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
+		node.lock.Lock()
+		it, there := node.starts[id]
+		if there {
+			println("Took: ", time.Since(it).String())
+			delete(node.starts, id)
 		}
-		if proposal != math.MaxUint64 {
-			node.lock.Lock()
-			it, there := node.starts[proposal]
-			if there {
-				println("Took: ", time.Since(it).String())
-				delete(node.starts, proposal)
-			}
-			node.lock.Unlock()
-			instance.ProposeMutex.RLock()
-			data, present := instance.Messages[proposal]
-			instance.ProposeMutex.RUnlock()
-			if present {
-				//println("handling: ", string(data.Data))
-				instance.ProposeMutex.Lock()
-				delete(instance.Messages, proposal)
-				instance.ProposeMutex.Unlock()
-				instance.entries[entry] = pb.Entry{
-					Term:  0,
-					Index: atomic.LoadUint64(&node.index),
-					Data:  data.Data,
-				}
-				atomic.AddUint64(&node.index, 1)
-				entry++
-			}
+		node.lock.Unlock()
+		instance.entries[entry] = pb.Entry{
+			Term:  0,
+			Index: atomic.LoadUint64(&node.index),
+			Data:  data,
 		}
+		atomic.AddUint64(&node.index, 1)
+		entry++
+		highest = i
+		return nil
+	})
+	if reason != nil {
+		panic(reason)
 	}
-	atomic.StoreUint64(&instance.Committed, uint64(highest+1))
 	instance.channel <- Ready{
 		//SoftState: SOFT_STATE,
 		HardState: pb.HardState{
-			Commit: uint64(highest + 1),
+			Commit: highest + 1,
 		},
 		ReadStates:       instance.states,
 		Entries:          instance.entries[:entry],
