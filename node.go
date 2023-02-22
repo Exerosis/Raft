@@ -648,8 +648,8 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
-	//var node = rabia.MakeNode(addresses, pipes...)
-	var node = MakeTestNode(addresses, pipes...)
+	var node = rabia.MakeNode(addresses, pipes...)
+	//var node = MakeTestNode(addresses, pipes...)
 	var instance = &Rabia{
 		Node:    node,
 		channel: make(chan Ready, 1),
