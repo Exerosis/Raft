@@ -701,13 +701,13 @@ func (node *Rabia) Advance() {
 	var instance = node
 	var entry = 0
 	var highest = uint64(0)
-	var entries = make([]pb.Entry, entry)
+	var entries []pb.Entry
 	reason := node.Consume(func(i uint64, id uint64, data []byte) error {
-		entries[entry] = pb.Entry{
+		entries = append(entries, pb.Entry{
 			Term:  0,
 			Index: atomic.LoadUint64(&node.index),
 			Data:  data,
-		}
+		})
 		atomic.AddUint64(&node.index, 1)
 		entry++
 		highest = i
