@@ -643,7 +643,10 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 	for i := range pipes {
 		pipes[i] = uint16(3000 + (i * 3))
 	}
-	var node = rabia.MakeNode(addresses, pipes...)
+	node, reason := rabia.MakeNode(address, addresses, pipes...)
+	if reason != nil {
+		panic(reason)
+	}
 	//var node = MakeTestNode(addresses, pipes...)
 	var instance = &Rabia{
 		Node:    node,
@@ -651,7 +654,7 @@ func StartRabia(config *Config, peers []Peer) *Rabia {
 		entries: make([]pb.Entry, node.Size()),
 	}
 	go func() {
-		reason := instance.Run(address)
+		reason := instance.Run()
 		if reason != nil {
 			panic(reason)
 		}
