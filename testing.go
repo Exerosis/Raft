@@ -45,7 +45,7 @@ func (node *test) Propose(id uint64, data []byte) error {
 	return nil
 }
 
-func (node *test) Run(address string) error {
+func (node *test) Run() error {
 	var group sync.WaitGroup
 	group.Add(1)
 	go func() {
@@ -99,4 +99,9 @@ func (node *test) Consume(block func(uint64, uint64, []byte) error) error {
 	}
 	atomic.StoreUint64(&node.committed, uint64(highest+1))
 	return nil
+}
+
+func (node *test) Repair(index uint64) (uint64, []byte, error) {
+	//TODO implement me
+	panic("implement me")
 }
