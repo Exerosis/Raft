@@ -20,17 +20,6 @@ type test struct {
 	commitLock sync.Mutex
 }
 
-func MakeTestNode(addresses []string, pipes ...uint16) rabia.Node {
-	var compare = &rabia.Comparator{Comparison: rabia.ComparingProposals}
-	var size = uint32((65536 / len(pipes)) * len(pipes))
-	return &test{
-		rabia.MakeLog(uint16(len(addresses)), size),
-		guc.NewPriorityBlockingQueueWithComparator(compare),
-		make(map[uint64][]byte), sync.RWMutex{},
-		uint64(0), int64(-1), sync.Mutex{},
-	}
-}
-
 func (node *test) Size() uint32 {
 	return node.log.Size
 }
